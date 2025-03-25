@@ -1,0 +1,5 @@
+package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
+
+public interface Mask<T> {
+    T generate();
+}
