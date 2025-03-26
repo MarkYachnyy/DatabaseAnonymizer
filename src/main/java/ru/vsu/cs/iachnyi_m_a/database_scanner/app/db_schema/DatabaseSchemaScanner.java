@@ -28,9 +28,16 @@ public class DatabaseSchemaScanner {
             Table table = new Table(tableName, scanColumns(tableName));
             databaseSchema.getTables().add(table);
         }
-        Map<String, List<String>> primaryKeys = scanAllPrimaryKeys();
-        for (String tableName : primaryKeys.keySet()) {
-            databaseSchema.getTableByName(tableName).getPrimaryKeys().addAll(primaryKeys.get(tableName));
+        List<Column> primaryKeys = scanAllPrimaryKeys();
+        for (Column column : primaryKeys) {
+            databaseSchema.getTableByName(column.getTableName()).getPrimaryKeys().add(column.getTableName());
+        }
+        for(Column primaryKey : primaryKeys) {
+            List<Column> foreignKeys = scanAllForeignKeysThatReference(primaryKey.getTableName(), primaryKey.getColumnName());
+            for(Column foreignKey : foreignKeys) {
+                Table table = databaseSchema.getTableByName(foreignKey.getTableName());
+                table.getForeignKeys().put(foreignKey.getColumnName(), primaryKey);
+            }
         }
         return databaseSchema;
     }
@@ -49,6 +56,40 @@ public class DatabaseSchemaScanner {
         return tableNames;
     }
 
+    private List<Column> scanAllForeignKeysThatReference(String tableName, String columnName) {
+        List<Column> res = new ArrayList<>();
+        try (Connection con = dataSource.getConnection()) {
+            PreparedStatement statement = con.prepareStatement("""
+                                        SELECT la.attrelid::regclass AS table_name,
+                                               la.attname AS column_name
+                                        FROM pg_constraint AS c
+                                           JOIN pg_index AS i
+                                              ON i.indexrelid = c.conindid
+                                           JOIN pg_attribute AS la
+                                              ON la.attrelid = c.conrelid
+                                                 AND la.attnum = c.conkey[1]
+                                           JOIN pg_attribute AS ra
+                                              ON ra.attrelid = c.confrelid
+                                                 AND ra.attnum = c.confkey[1]
+                                        WHERE c.confrelid = ?::regclass
+                                          AND c.contype = 'f'
+                                          AND ra.attname = ?
+                                          AND cardinality(c.confkey) = 1;
+                    """);
+            statement.setString(1, tableName);
+            statement.setString(2, columnName);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                String cn = resultSet.getString("column_name");
+                String tn = resultSet.getString("table_name");
+                res.add(new Column(tn, cn));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+        }
+        return res;
+    }
+
 
     private DatabaseValueType getType(String s) {
         return switch (s.toLowerCase()) {
@@ -62,8 +103,8 @@ public class DatabaseSchemaScanner {
         };
     }
 
-    private Map<String, List<String>> scanAllPrimaryKeys() {
-        Map<String, List<String>> primaryKeys = new HashMap<>();
+    private List<Column> scanAllPrimaryKeys() {
+        List<Column> res = new ArrayList<>();
         try (Connection con = dataSource.getConnection()) {
             PreparedStatement statement = con.prepareStatement("""
                                         SELECT kcy.column_name AS column_name, kcy.table_name AS table_name FROM information_schema.key_column_usage AS kcy JOIN information_schema.table_constraints AS tc\s
@@ -74,13 +115,12 @@ public class DatabaseSchemaScanner {
             while (resultSet.next()) {
                 String columnName = resultSet.getString("column_name");
                 String tableName = resultSet.getString("table_name");
-                if(!primaryKeys.containsKey(tableName)) primaryKeys.put(tableName, new ArrayList<>());
-                primaryKeys.get(tableName).add(columnName);
+                res.add(new Column(tableName, columnName));
             }
         } catch (SQLException e) {
             e.printStackTrace(System.err);
         }
-        return primaryKeys;
+        return res;
     }
 
     private Map<String, DatabaseValueType> scanColumns(String tableName) {
