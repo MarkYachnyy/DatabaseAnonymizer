@@ -39,7 +39,6 @@ public class DatabaseSchema {
         tables.removeAll(toRemove);
         int i = 1;
         while (!tables.isEmpty()) {
-            System.out.println(tables.size());
             res.add(new ArrayList<>());
             toRemove.clear();
             for (Table table : tables) {
