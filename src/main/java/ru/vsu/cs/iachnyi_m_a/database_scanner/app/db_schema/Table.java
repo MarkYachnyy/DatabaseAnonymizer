@@ -25,5 +25,8 @@ public class Table {
         this.foreignKeys = new HashMap<>();
     }
 
-
+    @Override
+    public boolean equals(Object obj) {
+        return this.tableName.equals(((Table)obj).tableName);
+    }
 }

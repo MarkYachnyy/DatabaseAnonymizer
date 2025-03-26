@@ -14,9 +14,8 @@ public class DatabaseScannerApplication {
     public static void main(String[] args) {
         SpringApplication.run(DatabaseScannerApplication.class, args);
         DatabaseSchemaScanner scanner = new DatabaseSchemaScanner(HikariDataSourceFactory.create("pbd_sem5", "postgres", "1234", 20000, 10));
-        List<Table> tables = scanner.scan().getTables();
-        for(Table table : tables) {
-            System.out.println(table.toString());
+        for(List<Table> tables: scanner.scan().getTablesByDependenceLayers()){
+            System.out.println(tables.stream().map(Table::getTableName).toList());
         }
     }
 
