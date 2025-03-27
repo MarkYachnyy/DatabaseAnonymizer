@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @ToString
-public class StringMaskBuilder implements MaskBuilder<String> {
+public class StringMaskBuilder implements MaskBuilder {
 
     private int minLength;
     private int maxLength;
@@ -24,17 +24,20 @@ public class StringMaskBuilder implements MaskBuilder<String> {
     }
 
     @Override
-    public void append(String value) {
-        if (value == null) return;
+    public void append(Object value) {
+        if(!(value instanceof String)){
+            throw new IllegalArgumentException();
+        }
+        String strValue = (String)value;
         if (characters.isEmpty() && enumValues.isEmpty()) {
-            enumValues.add(value);
+            enumValues.add(strValue);
         } else {
             if (!enumValues.isEmpty()) {
-                appendEnumValue(value);
+                appendEnumValue(strValue);
             } else if (!(characters.size() == 1 && maxLength != minLength)) {
-                appendFixedLengthWord(value);
+                appendFixedLengthWord(strValue);
             } else {
-                appendRandomLengthWord(value);
+                appendRandomLengthWord(strValue);
             }
         }
     }

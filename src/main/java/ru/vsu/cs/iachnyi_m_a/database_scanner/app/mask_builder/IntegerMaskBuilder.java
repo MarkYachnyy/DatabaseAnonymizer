@@ -3,7 +3,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask_builder;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask.IntegerMask;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask.Mask;
 
-public class IntegerMaskBuilder implements MaskBuilder<Integer> {
+public class IntegerMaskBuilder implements MaskBuilder{
 
     private int min;
     private int max;
@@ -14,13 +14,17 @@ public class IntegerMaskBuilder implements MaskBuilder<Integer> {
     }
 
     @Override
-    public void append(Integer value) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
+    public void append(Object value) {
+        if(!(value instanceof Integer)){
+            throw new IllegalArgumentException();
+        }
+        int intValue = (Integer)value;
+        min = Math.min(min, intValue);
+        max = Math.max(max, intValue);
     }
 
     @Override
-    public Mask<Integer> get() {
+    public Mask get() {
         return new IntegerMask(min, max);
     }
 }

@@ -2,7 +2,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 
 import java.util.Random;
 
-public class FloatMask implements Mask<Float> {
+public class FloatMask implements Mask {
 
     private float min;
     private float max;

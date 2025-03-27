@@ -2,7 +2,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 
 import java.util.Random;
 
-public class LongMask implements Mask<Long>{
+public class LongMask implements Mask{
 
     private long min;
     private long max;

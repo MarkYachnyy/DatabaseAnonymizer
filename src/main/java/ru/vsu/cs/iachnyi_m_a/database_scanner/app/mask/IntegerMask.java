@@ -2,7 +2,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 
 import java.util.Random;
 
-public class IntegerMask implements Mask<Integer>{
+public class IntegerMask implements Mask{
 
     private int min;
     private int max;

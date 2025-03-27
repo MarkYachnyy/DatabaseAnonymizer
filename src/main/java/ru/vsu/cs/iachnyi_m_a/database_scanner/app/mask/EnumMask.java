@@ -3,7 +3,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 import java.util.List;
 import java.util.Random;
 
-public class EnumMask implements Mask<String>{
+public class EnumMask implements Mask{
 
     private List<String> values;
     private Random random;

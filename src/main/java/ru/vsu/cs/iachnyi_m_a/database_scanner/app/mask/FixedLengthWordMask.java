@@ -3,7 +3,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 import java.util.List;
 import java.util.Random;
 
-public class FixedLengthWordMask implements WordMask{
+public class FixedLengthWordMask implements Mask{
 
     private List<String> allowedCharacters;
     Random random;
@@ -13,7 +13,6 @@ public class FixedLengthWordMask implements WordMask{
         random = new Random();
     }
 
-    @Override
     public String generate() {
         StringBuilder result = new StringBuilder();
         for(String chars: allowedCharacters) {

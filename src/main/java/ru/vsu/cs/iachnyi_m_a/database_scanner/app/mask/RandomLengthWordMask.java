@@ -2,7 +2,7 @@ package ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask;
 
 import java.util.Random;
 
-public class RandomLengthWordMask implements WordMask {
+public class RandomLengthWordMask implements Mask{
 
     int minLength;
     int maxLength;
