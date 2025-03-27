@@ -50,6 +50,7 @@ public class DatabaseQueryTool {
                 for(String name : columnNames){
                     result.put(name, resultSet.getObject(name));
                 }
+                res.add(result);
             }
         } catch (SQLException e){
             e.printStackTrace(System.err);

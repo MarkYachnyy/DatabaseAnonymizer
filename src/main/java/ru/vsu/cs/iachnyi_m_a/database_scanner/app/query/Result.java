@@ -1,8 +1,11 @@
 package ru.vsu.cs.iachnyi_m_a.database_scanner.app.query;
 
+import lombok.ToString;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@ToString
 public class Result {
 
     private Map<String, Object> content;

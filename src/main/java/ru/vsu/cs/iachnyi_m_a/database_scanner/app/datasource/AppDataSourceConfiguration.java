@@ -1,4 +1,4 @@
-package ru.vsu.cs.iachnyi_m_a.database_scanner.app;
+package ru.vsu.cs.iachnyi_m_a.database_scanner.app.datasource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
