@@ -7,12 +7,15 @@ import ru.vsu.cs.iachnyi_m_a.database_scanner.app.datasource.HikariDataSourceFac
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.DatabaseSchema;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.DatabaseSchemaScanner;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.Table;
+import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask_builder.MaskBuilder;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask_builder.StringMaskBuilder;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.query.DatabaseQueryTool;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.table_mask.TableMask;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.table_mask.TableMaskBuilder;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @SpringBootApplication
@@ -23,9 +26,13 @@ public class DatabaseScannerApplication {
         HikariDataSource source = HikariDataSourceFactory.create("pbd_sem5", "postgres", "1234", 20000, 10);
         DatabaseSchemaScanner dbSchemaScanner = new DatabaseSchemaScanner(source);
         DatabaseSchema schema = dbSchemaScanner.scan();
-        Table table = schema.getTableByName("users");
+        Table table = schema.getTableByName("spendings");
+        System.out.println(table);
         TableMaskBuilder builder = new TableMaskBuilder(table, source);
-        builder.build();
+        Map<String, MaskBuilder> tableMask = builder.build();
+        for (Map.Entry<String, MaskBuilder> entry: tableMask.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
 //        for (int i = 0; i < 5; i++) {
 //            StringBuilder b = new StringBuilder();
 //            int min = 'a';

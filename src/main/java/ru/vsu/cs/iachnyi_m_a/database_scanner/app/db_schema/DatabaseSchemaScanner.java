@@ -99,6 +99,7 @@ public class DatabaseSchemaScanner {
             case "double precision" -> DatabaseValueType.FLOAT;
             case "integer" -> DatabaseValueType.INTEGER;
             case "boolean" -> DatabaseValueType.BOOLEAN;
+            case "date" -> DatabaseValueType.DATE;
             default -> null;
         };
     }

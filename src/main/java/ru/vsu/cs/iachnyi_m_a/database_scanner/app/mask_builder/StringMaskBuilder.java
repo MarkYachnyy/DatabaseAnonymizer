@@ -98,7 +98,7 @@ public class StringMaskBuilder implements MaskBuilder {
     }
 
     @Override
-    public Mask<String> get() {
+    public Mask get() {
         return null;
     }
 }

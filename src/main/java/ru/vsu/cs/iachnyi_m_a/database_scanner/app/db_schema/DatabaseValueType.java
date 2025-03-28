@@ -6,5 +6,6 @@ public enum DatabaseValueType {
     UUID,
     VARCHAR,
     FLOAT,
-    BOOLEAN
+    BOOLEAN,
+    DATE
 }

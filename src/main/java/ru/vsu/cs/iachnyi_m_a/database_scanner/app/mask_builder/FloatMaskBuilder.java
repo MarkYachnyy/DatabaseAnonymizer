@@ -4,7 +4,7 @@ import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask.FloatMask;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask.IntegerMask;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask.Mask;
 
-public class FloatMaskBuilder implements MaskBuilder<Float> {
+public class FloatMaskBuilder implements MaskBuilder {
 
     private float min;
     private float max;
@@ -15,13 +15,15 @@ public class FloatMaskBuilder implements MaskBuilder<Float> {
     }
 
     @Override
-    public void append(Float value) {
-        min = Math.min(min, value);
-        max = Math.max(max, value);
+    public void append(Object value) {
+        if(!(value instanceof Float)) throw new IllegalArgumentException();
+        float f = (Float)value;
+        min = Math.min(min, f);
+        max = Math.max(max, f);
     }
 
     @Override
-    public Mask<Float> get() {
+    public Mask get() {
         return new FloatMask(min, max);
     }
 }

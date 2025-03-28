@@ -31,7 +31,9 @@ public class DatabaseQueryTool {
             while(resultSet.next()){
                 Result result = new Result();
                 for(String name : columnNames){
-                    result.put(name, resultSet.getObject(name));
+                    Object value = resultSet.getObject(name);
+                    System.out.println(value.getClass().getName());
+                    result.put(name, value);
                 }
             }
         } catch (SQLException e){
@@ -48,7 +50,9 @@ public class DatabaseQueryTool {
             while(resultSet.next()){
                 Result result = new Result();
                 for(String name : columnNames){
-                    result.put(name, resultSet.getObject(name));
+                    Object value = resultSet.getObject(name);
+                    System.out.println(value.getClass().getName());
+                    result.put(name, value);
                 }
                 res.add(result);
             }

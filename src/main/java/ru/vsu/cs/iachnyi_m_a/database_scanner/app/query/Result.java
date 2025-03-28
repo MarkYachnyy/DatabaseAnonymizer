@@ -14,19 +14,20 @@ public class Result {
         this.content = new HashMap<String, Object>();
     }
 
-    int getInteger(String columnName){
+    public int getInteger(String columnName){
         return (Integer) content.get(columnName);
     }
-    String getString(String columnName){
+    public String getString(String columnName){
         return (String) content.get(columnName);
     }
-    float getFloat(String columnName){
+    public float getFloat(String columnName){
         return (Float) content.get(columnName);
     }
-    long getLong(String columnName){
+    public long getLong(String columnName){
         return (Long) content.get(columnName);
     }
-    void put(String columnName, Object value){
+    public Object getObject(String columnName){return content.get(columnName);}
+    public void put(String columnName, Object value){
         content.put(columnName, value);
     }
 }
