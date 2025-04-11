@@ -1,4 +1,4 @@
-package ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.rule.distribution.discrete;
+package ru.vsu.cs.iachnyi_m_a.database_scanner.app.generator.distribution.discrete;
 
 import java.util.stream.IntStream;
 
