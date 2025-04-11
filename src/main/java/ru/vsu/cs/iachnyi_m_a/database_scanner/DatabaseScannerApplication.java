@@ -4,19 +4,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.datasource.HikariDataSourceFactory;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.DatabaseSchema;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.DatabaseSchemaScanner;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.Table;
+import ru.vsu.cs.iachnyi_m_a.database_scanner.app.db_schema.base.Table;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask_builder.MaskBuilder;
 import ru.vsu.cs.iachnyi_m_a.database_scanner.app.mask_builder.StringMaskBuilder;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.query.DatabaseQueryTool;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.table_mask.TableMask;
-import ru.vsu.cs.iachnyi_m_a.database_scanner.app.table_mask.TableMaskBuilder;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 @SpringBootApplication
 public class DatabaseScannerApplication {
