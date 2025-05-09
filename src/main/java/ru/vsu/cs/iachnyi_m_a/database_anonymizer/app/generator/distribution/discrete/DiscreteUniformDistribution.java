@@ -16,6 +16,6 @@ public class DiscreteUniformDistribution  implements DiscreteDistribution{
 
     @Override
     public int next() {
-        return random.nextInt(min, max);
+        return random.nextInt(max - min) + min;
     }
 }

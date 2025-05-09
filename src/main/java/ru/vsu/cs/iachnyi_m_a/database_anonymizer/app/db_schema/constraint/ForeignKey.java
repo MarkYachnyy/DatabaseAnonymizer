@@ -13,5 +13,5 @@ public class ForeignKey {
 
     private IntegerRule sourceCountRule;
     private float sourceZeroChance;
-    private float rightZeroChance;
+    private float targetZeroChance;
 }

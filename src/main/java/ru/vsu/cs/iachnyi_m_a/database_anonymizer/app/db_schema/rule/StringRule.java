@@ -6,7 +6,9 @@ import java.util.List;
 
 @Data
 public class StringRule {
-
+    private String tableName;
+    private String columnName;
     private List<String> allowedCharacters;
     private IntegerRule lengthRule;
+    private float nullChance;
 }

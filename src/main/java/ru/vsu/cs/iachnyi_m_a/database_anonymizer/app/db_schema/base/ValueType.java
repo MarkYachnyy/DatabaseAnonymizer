@@ -1,9 +1,11 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base;
 
 public enum ValueType {
-    INTEGER,
     BIGINT,
     UUID,
+    OBJECT_ID,
+
+    INTEGER,
     VARCHAR,
     FLOAT,
     BOOLEAN,

@@ -5,9 +5,11 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class IntegerRule {
+public class FloatRule {
     private String tableName;
     private String columnName;
-    private DiscreteDistributionType distributionType;
+
+    private ContinuousDistributionType distributionType;
     private float[] params;
+    private float nullChance;
 }

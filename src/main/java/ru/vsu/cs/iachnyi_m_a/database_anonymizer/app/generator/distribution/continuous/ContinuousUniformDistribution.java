@@ -16,6 +16,6 @@ public class ContinuousUniformDistribution implements ContinuousDistribution {
 
     @Override
     public float next() {
-        return rand.nextFloat(min, max);
+        return rand.nextFloat() * (max - min) + min;
     }
 }

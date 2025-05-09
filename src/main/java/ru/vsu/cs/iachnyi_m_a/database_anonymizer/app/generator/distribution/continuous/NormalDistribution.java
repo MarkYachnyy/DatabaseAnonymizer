@@ -16,6 +16,6 @@ public class NormalDistribution implements ContinuousDistribution{
 
     @Override
     public float next() {
-        return (float) rand.nextGaussian(mean, stdDeviation);
+        return (float) rand.nextGaussian() * stdDeviation + mean;
     }
 }

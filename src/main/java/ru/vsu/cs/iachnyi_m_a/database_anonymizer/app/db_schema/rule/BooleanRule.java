@@ -2,12 +2,10 @@ package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule;
 
 import lombok.Data;
 
-import java.util.List;
-
 @Data
-public class IntegerRule {
+public class BooleanRule {
     private String tableName;
     private String columnName;
-    private DiscreteDistributionType distributionType;
-    private float[] params;
+    private float trueChance;
+    private float nullChance;
 }

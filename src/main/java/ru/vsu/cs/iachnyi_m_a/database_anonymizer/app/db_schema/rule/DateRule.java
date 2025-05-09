@@ -4,5 +4,11 @@ import lombok.Data;
 
 @Data
 public class DateRule {
+    private String tableName;
+    private String columnName;
 
+    private String startDate;
+    private String endDate;
+
+    private float nullChance;
 }
