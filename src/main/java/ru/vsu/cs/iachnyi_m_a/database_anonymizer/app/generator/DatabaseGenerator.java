@@ -1,9 +1,11 @@
-package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator;
+package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator;
 
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.Column;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.Table;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.ConstraintSet;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.ForeignKey;
-import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.TableGenerator;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.PrimaryKey;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule.RuleSet;
 
 import java.util.*;
 
@@ -12,15 +14,22 @@ public class DatabaseGenerator {
     private final List<TableGenerator> tableGenerators;
     private List<List<String>> tableHierarchy;
 
-    public DatabaseGenerator(List<Table> tables) {
+    public DatabaseGenerator(List<Table> tables, ConstraintSet constraintSet, RuleSet ruleSet) {
         tableGenerators = new ArrayList<TableGenerator>();
         for (Table table : tables) {
             tableGenerators.add(new TableGenerator(table.getName()));
         }
-    }
-
-    public void addConstraintSet(ConstraintSet constraintSet) {
         tableHierarchy = groupTablesByLevel(tableGenerators.stream().map(TableGenerator::getTableName).toList(), constraintSet.getForeignKeys());
+        for (PrimaryKey primaryKey : constraintSet.getPrimaryKeys()) {
+            Table table = tables.stream().filter(table1 -> table1.getName().equals(primaryKey.getTableName())).findFirst().get();
+            Column column = table.getColumns().stream().filter(c -> c.getName().equals(primaryKey.getTableName())).findFirst().get();
+            tableGenerators.stream()
+                    .filter(t -> t.getTableName().equals(primaryKey.getTableName()))
+                    .findFirst()
+                    .get()
+                    .getColumnGenerators()
+                    .add(PrimaryKeyGeneratorFactory.createColumnGenerator(primaryKey.getColumnName(), column.getType()));
+        }
     }
 
     private List<List<String>> groupTablesByLevel(List<String> allTables, List<ForeignKey> foreignKeys) {
