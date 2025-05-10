@@ -19,6 +19,26 @@
       "sourceMaxCount": 2,
       "sourceZeroChance": 0,
       "targetZeroChance": 0.01
+    },
+    {
+      "sourceTableName": "enters",
+      "sourceColumnName": "user_id",
+      "targetTableName": "users",
+      "targetColumnName": "id",
+      "sourceMinCount": 0,
+      "sourceMaxCount": 10,
+      "sourceZeroChance": 0,
+      "targetZeroChance": 0.01
+    },
+    {
+      "sourceTableName": "enters",
+      "sourceColumnName": "card_id",
+      "targetTableName": "cards",
+      "targetColumnName": "id",
+      "sourceMinCount": 0,
+      "sourceMaxCount": 10,
+      "sourceZeroChance": 0,
+      "targetZeroChance": 0.01
     }
   ]
 }

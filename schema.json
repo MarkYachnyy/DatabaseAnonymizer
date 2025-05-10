@@ -37,6 +37,23 @@
           "type": "DATE"
         }
       ]
+    },
+    {
+      "name": "enters",
+      "columns" : [
+        {
+          "name" : "user_id",
+          "type" : "BIGINT"
+        },
+        {
+          "name" : "card_id",
+          "type" : "UUID"
+        },
+        {
+          "name" : "enter_date",
+          "type" : "DATE"
+        }
+      ]
     }
   ]
 }

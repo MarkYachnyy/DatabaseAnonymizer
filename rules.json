@@ -49,6 +49,12 @@
       "tableName": "cards",
       "startDate" : "2022-01-01",
       "endDate": "2024-12-31"
+    },
+    {
+      "columnName": "enter_date",
+      "tableName": "enters",
+      "startDate" : "2022-01-01",
+      "endDate": "2024-12-31"
     }
   ]
 }
