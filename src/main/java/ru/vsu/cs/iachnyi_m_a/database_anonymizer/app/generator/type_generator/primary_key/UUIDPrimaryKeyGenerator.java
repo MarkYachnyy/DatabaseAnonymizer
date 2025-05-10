@@ -19,7 +19,7 @@ public class UUIDPrimaryKeyGenerator implements ColumnGenerator {
 
     @Override
     public String[] getColumnNames() {
-        return new String[0];
+        return new String[]{columnName};
     }
 
     @Override

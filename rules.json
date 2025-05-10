@@ -1,0 +1,54 @@
+{
+  "integerRules": [
+    {
+      "columnName": "age",
+      "tableName": "users",
+      "nullChance": 0,
+      "distributionType": "UNIFORM",
+      "params": [
+        18,
+        45
+      ]
+    }
+  ],
+  "stringRules": [
+    {
+      "columnName": "name",
+      "tableName": "users",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "abcdefghijklmnopqrstuvwxyz"
+      ],
+      "lengthRule": {
+        "distributionType": "UNIFORM",
+        "params": [
+          8,
+          20
+        ]
+      }
+    },
+    {
+      "columnName": "number",
+      "tableName": "cards",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "0123456789"
+      ],
+      "lengthRule": {
+        "distributionType": "UNIFORM",
+        "params": [
+          16,
+          17
+        ]
+      }
+    }
+  ],
+  "dateRules": [
+    {
+      "columnName": "expiration_date",
+      "tableName": "cards",
+      "startDate" : "2022-01-01",
+      "endDate": "2024-12-31"
+    }
+  ]
+}

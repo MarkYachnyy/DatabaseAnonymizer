@@ -1,6 +1,8 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator;
 
+import org.postgresql.util.PSQLException;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.Column;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.DatabaseSchema;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.Table;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.base.ValueType;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.ConstraintSet;
@@ -8,10 +10,13 @@ import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.Foreig
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.PrimaryKey;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule.Rule;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule.RuleSet;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.query.QueryExecutor;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.query.QueryTool;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator.ColumnGenerator;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DatabaseGenerator {
 
@@ -23,33 +28,61 @@ public class DatabaseGenerator {
         this.queryTool = queryTool;
     }
 
-    public void fillDatabase(List<Table> tables, ConstraintSet constraintSet, RuleSet ruleSet) throws SQLException {
+    public void fillDatabase(DatabaseSchema schema, ConstraintSet constraintSet, RuleSet ruleSet) throws SQLException {
+        List<Table> tables = schema.getTables();
         tableGenerators = new ArrayList<>();
         for (Table table : tables) {
+            try {
+                queryTool.getQueryExecutor().executeQuery("DROP TABLE " + table.getName() + ";");
+            } catch (PSQLException e) {
+
+            }
             queryTool.getQueryExecutor().executeQuery(getTableCreationQuery(table));
             tableGenerators.add(new TableGenerator(table.getName()));
         }
-//        tableHierarchy = groupTablesByLevel(tableGenerators.stream().map(TableGenerator::getTableName).toList(), constraintSet.getForeignKeys());
-//        for (PrimaryKey primaryKey : constraintSet.getPrimaryKeys()) {
-//            Table table = tables.stream().filter(table1 -> table1.getName().equals(primaryKey.getTableName())).findFirst().get();
-//            Column column = table.getColumns().stream().filter(c -> c.getName().equals(primaryKey.getTableName())).findFirst().get();
-//            tableGenerators.stream()
-//                    .filter(t -> t.getTableName().equals(primaryKey.getTableName()))
-//                    .findFirst()
-//                    .get()
-//                    .getColumnGenerators()
-//                    .add(PrimaryKeyGeneratorFactory.createColumnGenerator(primaryKey.getColumnName(), column.getType()));
-//        }
-//        List<Rule> allRules = new ArrayList<>();
-//        allRules.addAll(ruleSet.getBooleanRules());
-//        allRules.addAll(ruleSet.getIntegerRules());
-//        allRules.addAll(ruleSet.getFloatRules());
-//        allRules.addAll(ruleSet.getStringRules());
-//        allRules.addAll(ruleSet.getDateRules());
-//        for (Rule rule : allRules) {
-//            TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
-//            tableGenerator.getColumnGenerators().add(rule.toGenerator());
-//        }
+        tableHierarchy = groupTablesByLevel(tableGenerators.stream().map(TableGenerator::getTableName).toList(), constraintSet.getForeignKeys());
+        System.out.println(tableHierarchy);
+        for (PrimaryKey primaryKey : constraintSet.getPrimaryKeys()) {
+            Table table = tables.stream().filter(table1 -> table1.getName().equals(primaryKey.getTableName())).findFirst().get();
+            Column column = table.getColumns().stream().filter(c -> c.getName().equals(primaryKey.getColumnName())).findFirst().get();
+            tableGenerators.stream()
+                    .filter(t -> t.getTableName().equals(primaryKey.getTableName()))
+                    .findFirst()
+                    .get()
+                    .getColumnGenerators()
+                    .add(PrimaryKeyGeneratorFactory.createColumnGenerator(primaryKey.getColumnName(), column.getType()));
+        }
+        List<Rule> allRules = new ArrayList<>();
+        if (ruleSet.getBooleanRules() != null) allRules.addAll(ruleSet.getBooleanRules());
+        if (ruleSet.getIntegerRules() != null) allRules.addAll(ruleSet.getIntegerRules());
+        if (ruleSet.getFloatRules() != null) allRules.addAll(ruleSet.getFloatRules());
+        if (ruleSet.getStringRules() != null) allRules.addAll(ruleSet.getStringRules());
+        if (ruleSet.getDateRules() != null) allRules.addAll(ruleSet.getDateRules());
+        for (Rule rule : allRules) {
+            TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
+            tableGenerator.getColumnGenerators().add(rule.toGenerator());
+            System.out.println(Arrays.toString(tableGenerator.getColumnGenerators().toArray()));
+        }
+        for (TableGenerator tableGenerator : tableGenerators) {
+            String columns = tableGenerator.getColumnGenerators().
+                    stream().
+                    map(g -> String.join(", ", g.getColumnNames())).
+                    collect(Collectors.joining(", "));
+            QueryExecutor executor = queryTool.getQueryExecutor();
+            for (int i = 0; i < 1000; i++) {
+                StringBuilder query = new StringBuilder("INSERT INTO ");
+                query.append(tableGenerator.getTableName());
+                query.append(" (");
+                query.append(columns);
+                query.append(") VALUES (");
+                query.append(tableGenerator.getColumnGenerators().
+                        stream().
+                        map(g -> String.join(", ", g.getNextValues())).
+                        collect(Collectors.joining(", ")));
+                query.append(");");
+                executor.executeQuery(query.toString());
+            }
+        }
     }
 
     private List<List<String>> groupTablesByLevel(List<String> allTables, List<ForeignKey> foreignKeys) {
@@ -145,13 +178,13 @@ public class DatabaseGenerator {
 
     private String getColumnCreationQuery(Column column) {
         StringBuilder query = new StringBuilder();
-        if(column.getType() == ValueType.OBJECT_ID){
+        if (column.getType() == ValueType.OBJECT_ID) {
             query.append(column.getName());
             query.append(' ');
             query.append("VARCHAR");
-        } else if(column.getType() == ValueType.INT_INTERVAL) {
+        } else if (column.getType() == ValueType.INT_INTERVAL) {
             query.append(getIntervalCreationQuery(column.getName(), ValueType.INTEGER));
-        } else if(column.getType() == ValueType.DATE_INTERVAL) {
+        } else if (column.getType() == ValueType.DATE_INTERVAL) {
             query.append(getIntervalCreationQuery(column.getName(), ValueType.DATE));
         } else {
             query.append(column.getName());

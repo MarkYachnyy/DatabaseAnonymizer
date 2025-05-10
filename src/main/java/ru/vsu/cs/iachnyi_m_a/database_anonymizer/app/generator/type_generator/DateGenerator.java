@@ -33,9 +33,9 @@ public class DateGenerator implements ColumnGenerator{
     public String[] getNextValues() {
         long dateLong = rand.nextLong(minDate, maxDate);
         Date date = new Date(dateLong);
-        return new String[]{new SimpleDateFormat(
-                "dd-MM-yyyy",
+        return new String[]{"'" + new SimpleDateFormat(
+                "yyyy-MM-dd",
                 Locale.ROOT
-        ).format(date)};
+        ).format(date) + "'"};
     }
 }

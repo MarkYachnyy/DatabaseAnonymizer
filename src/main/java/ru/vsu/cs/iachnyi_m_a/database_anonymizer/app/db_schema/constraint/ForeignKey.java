@@ -11,7 +11,8 @@ public class ForeignKey {
     private String targetTableName;
     private String targetColumnName;
 
-    private IntegerRule sourceCountRule;
+    private int sourceMinCount;
+    private int sourceMaxCount;
     private float sourceZeroChance;
     private float targetZeroChance;
 }

@@ -1,0 +1,42 @@
+{
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "OBJECT_ID"
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "age",
+          "type": "INTEGER"
+        }
+      ]
+    },
+    {
+      "name": "cards",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID"
+        },
+        {
+          "name": "number",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "expiration_date",
+          "type": "DATE"
+        }
+      ]
+    }
+  ]
+}

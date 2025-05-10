@@ -1,0 +1,24 @@
+{
+  "primaryKeys": [
+    {
+      "tableName": "users",
+      "columnName": "id"
+    },
+    {
+      "tableName": "cards",
+      "columnName": "id"
+    }
+  ],
+  "foreignKeys": [
+    {
+      "sourceTableName": "cards",
+      "sourceColumnName": "user",
+      "targetTableName": "users",
+      "targetColumnName": "id",
+      "sourceMinCount": 1,
+      "sourceMaxCount": 2,
+      "sourceZeroChance": 0,
+      "targetZeroChance": 0.01
+    }
+  ]
+}
