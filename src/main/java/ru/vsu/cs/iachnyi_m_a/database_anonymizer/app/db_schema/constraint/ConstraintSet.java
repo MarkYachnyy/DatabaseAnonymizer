@@ -1,5 +1,6 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;

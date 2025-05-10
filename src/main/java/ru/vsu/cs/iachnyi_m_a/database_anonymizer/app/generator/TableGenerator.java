@@ -14,6 +14,6 @@ public class TableGenerator {
 
     public TableGenerator(String tableName) {
         this.tableName = tableName;
-        this.columnGenerators = new ArrayList<ColumnGenerator>();
+        this.columnGenerators = new ArrayList<>();
     }
 }

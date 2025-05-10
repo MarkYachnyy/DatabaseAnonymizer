@@ -6,5 +6,4 @@ import lombok.Data;
 public class Column {
     String name;
     ValueType type;
-    float nullChance;
 }

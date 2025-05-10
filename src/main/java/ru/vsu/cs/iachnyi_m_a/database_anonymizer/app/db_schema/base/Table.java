@@ -8,9 +8,4 @@ import java.util.List;
 public class Table {
     private String name;
     private List<Column> columns;
-
-    @Override
-    public boolean equals(Object obj) {
-        return this.name.equals(((Table)obj).name);
-    }
 }
