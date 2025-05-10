@@ -10,25 +10,33 @@ import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.Foreig
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.constraint.PrimaryKey;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule.Rule;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.db_schema.rule.RuleSet;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.graph.TableRelationGraph;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.graph.TableRelationGraphNode;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.query.QueryExecutor;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.query.QueryTool;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator.ColumnGenerator;
 
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 public class DatabaseGenerator {
 
     private List<TableGenerator> tableGenerators;
-    private List<List<String>> tableHierarchy;
-    private QueryTool queryTool;
+    private TableRelationGraph tableRelationGraph;
+    private final QueryTool queryTool;
 
     public DatabaseGenerator(QueryTool queryTool) {
         this.queryTool = queryTool;
     }
 
     public void fillDatabase(DatabaseSchema schema, ConstraintSet constraintSet, RuleSet ruleSet) throws SQLException {
+
+        //СОЗДАНИЕ ТАБЛИЦ
+
         List<Table> tables = schema.getTables();
         tableGenerators = new ArrayList<>();
         for (Table table : tables) {
@@ -40,8 +48,13 @@ public class DatabaseGenerator {
             queryTool.getQueryExecutor().executeQuery(getTableCreationQuery(table));
             tableGenerators.add(new TableGenerator(table.getName()));
         }
-        tableHierarchy = groupTablesByLevel(tableGenerators.stream().map(TableGenerator::getTableName).toList(), constraintSet.getForeignKeys());
-        System.out.println(tableHierarchy);
+
+        //ЗАПОЛНЕНИЕ ГРАФА ОТНОШЕНИЯ ТАБЛИЦ
+
+        tableRelationGraph = getTableRelationGraph(schema.getTables().stream().map(Table::getName).toList(), constraintSet.getForeignKeys());
+
+        //ДОБАВЛЕНИЕ ГЕНЕРАТОРОВ ПЕРВИЧНЫХ КЛЮЧЕЙ
+
         for (PrimaryKey primaryKey : constraintSet.getPrimaryKeys()) {
             Table table = tables.stream().filter(table1 -> table1.getName().equals(primaryKey.getTableName())).findFirst().get();
             Column column = table.getColumns().stream().filter(c -> c.getName().equals(primaryKey.getColumnName())).findFirst().get();
@@ -49,9 +62,11 @@ public class DatabaseGenerator {
                     .filter(t -> t.getTableName().equals(primaryKey.getTableName()))
                     .findFirst()
                     .get()
-                    .getColumnGenerators()
-                    .add(PrimaryKeyGeneratorFactory.createColumnGenerator(primaryKey.getColumnName(), column.getType()));
+                    .setPrimaryKeyGenerator(PrimaryKeyGeneratorFactory.createColumnGenerator(primaryKey.getColumnName(), column.getType()));
         }
+
+        //ДОБАВЛЕНИЕ ГЕНЕРАТОРОВ ОБЫЧНЫХ ЗНАЧЕНИЙ
+
         List<Rule> allRules = new ArrayList<>();
         if (ruleSet.getBooleanRules() != null) allRules.addAll(ruleSet.getBooleanRules());
         if (ruleSet.getIntegerRules() != null) allRules.addAll(ruleSet.getIntegerRules());
@@ -63,103 +78,55 @@ public class DatabaseGenerator {
             tableGenerator.getColumnGenerators().add(rule.toGenerator());
             System.out.println(Arrays.toString(tableGenerator.getColumnGenerators().toArray()));
         }
-        for (TableGenerator tableGenerator : tableGenerators) {
-            String columns = tableGenerator.getColumnGenerators().
-                    stream().
-                    map(g -> String.join(", ", g.getColumnNames())).
-                    collect(Collectors.joining(", "));
-            QueryExecutor executor = queryTool.getQueryExecutor();
-            for (int i = 0; i < 1000; i++) {
-                StringBuilder query = new StringBuilder("INSERT INTO ");
-                query.append(tableGenerator.getTableName());
-                query.append(" (");
-                query.append(columns);
-                query.append(") VALUES (");
-                query.append(tableGenerator.getColumnGenerators().
-                        stream().
-                        map(g -> String.join(", ", g.getNextValues())).
-                        collect(Collectors.joining(", ")));
-                query.append(");");
-                executor.executeQuery(query.toString());
-            }
-        }
+
+        //
+
+        String firstTableName = "users";
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10, 10, 2, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+        threadPoolExecutor.allowCoreThreadTimeOut(true);
+        fillFirstTable(tableRelationGraph.findNodeByTableName(firstTableName),
+                threadPoolExecutor,
+                queryTool,
+                tableGenerators.stream().filter(tg -> tg.getTableName().equals(firstTableName)).findFirst().get(),
+                10);
+
+//        for (TableGenerator tableGenerator : tableGenerators) {
+//            String columns = tableGenerator.getColumnGenerators().
+//                    stream().
+//                    map(g -> String.join(", ", g.getColumnNames())).
+//                    collect(Collectors.joining(", "));
+//            QueryExecutor executor = queryTool.getQueryExecutor();
+//            for (int i = 0; i < 1000; i++) {
+//                StringBuilder query = new StringBuilder("INSERT INTO ");
+//                query.append(tableGenerator.getTableName());
+//                query.append(" (");
+//                query.append(columns);
+//                query.append(") VALUES (");
+//                query.append(tableGenerator.getColumnGenerators().
+//                        stream().
+//                        map(g -> {
+//                            boolean generate = Math.random() > g.getNullChance();
+//                            return generate ? String.join(", ", g.getNextValues()) : IntStream.range(0, g.getColumnNames().length).mapToObj(_ -> "NULL").collect(Collectors.joining(", "));
+//                        }).
+//                        collect(Collectors.joining(", ")));
+//                query.append(");");
+//                executor.executeQuery(query.toString());
+//            }
+//        }
     }
 
-    private List<List<String>> groupTablesByLevel(List<String> allTables, List<ForeignKey> foreignKeys) {
-        Map<String, Set<String>> dependencyMap = new HashMap<>();
-
-        for (String table : allTables) {
-            dependencyMap.put(table, new HashSet<>());
+    private TableRelationGraph getTableRelationGraph(List<String> allTables, List<ForeignKey> foreignKeys) {
+        TableRelationGraph graph = new TableRelationGraph();
+        for (String tableName : allTables) {
+            graph.getNodes().add(new TableRelationGraphNode(tableName));
         }
-
-        for (ForeignKey fk : foreignKeys) {
-            dependencyMap.get(fk.getTargetTableName()).add(fk.getSourceTableName());
+        for (ForeignKey foreignKey : foreignKeys) {
+            TableRelationGraphNode sourceNode = graph.findNodeByTableName(foreignKey.getSourceTableName());
+            TableRelationGraphNode targetNode = graph.findNodeByTableName(foreignKey.getTargetTableName());
+            sourceNode.getChildren().put(foreignKey.getSourceColumnName(), targetNode);
+            targetNode.getParents().put(foreignKey.getSourceColumnName(), sourceNode);
         }
-
-        Map<String, Integer> tableLevels = new HashMap<>();
-
-        List<List<String>> result = new ArrayList<>();
-
-        while (tableLevels.size() < allTables.size()) {
-            List<String> currentLevelTables = new ArrayList<>();
-
-            for (String table : allTables) {
-                if (tableLevels.containsKey(table)) {
-                    continue;
-                }
-
-                boolean allDependenciesResolved = true;
-                for (String dependentTable : dependencyMap.get(table)) {
-                    if (!tableLevels.containsKey(dependentTable)) {
-                        allDependenciesResolved = false;
-                        break;
-                    }
-                }
-
-                if (allDependenciesResolved) {
-                    int level = 0;
-                    for (String dependentTable : dependencyMap.get(table)) {
-                        level = Math.max(level, tableLevels.get(dependentTable));
-                    }
-                    tableLevels.put(table, level + 1);
-                    currentLevelTables.add(table);
-                }
-            }
-
-            if (currentLevelTables.isEmpty()) {
-                for (String table : allTables) {
-                    if (!tableLevels.containsKey(table) && dependencyMap.get(table).isEmpty()) {
-                        tableLevels.put(table, 1);
-                        currentLevelTables.add(table);
-                    }
-                }
-
-                if (currentLevelTables.isEmpty()) {
-                    for (String table : allTables) {
-                        if (!tableLevels.containsKey(table)) {
-                            tableLevels.put(table, 1);
-                            currentLevelTables.add(table);
-                        }
-                    }
-                }
-            }
-
-            if (!currentLevelTables.isEmpty()) {
-                while (result.size() <= tableLevels.get(currentLevelTables.get(0))) {
-                    result.add(new ArrayList<>());
-                }
-                result.get(tableLevels.get(currentLevelTables.get(0))).addAll(currentLevelTables);
-            }
-        }
-
-        List<List<String>> finalResult = new ArrayList<>();
-        for (List<String> level : result) {
-            if (!level.isEmpty()) {
-                finalResult.add(level);
-            }
-        }
-
-        return finalResult;
+        return graph;
     }
 
     private String getTableCreationQuery(Table table) {
@@ -202,6 +169,100 @@ public class DatabaseGenerator {
                 columnName +
                 "End " +
                 type;
+    }
+
+    private void fillFirstTable(TableRelationGraphNode graphNode, ThreadPoolExecutor executor, QueryTool queryTool, TableGenerator generator, int count) throws SQLException {
+        List<String> generatedKeys = IntStream.range(0, count).mapToObj(i -> generator.getPrimaryKeyGenerator().nextValue()).toList();
+        //System.out.println(generatedKeys);
+        for (String fkName : graphNode.getParents().keySet()) {
+            TableRelationGraphNode node = graphNode.getParents().get(fkName);
+            executor.execute(() -> {
+                try {
+                    fillParentTable(node, executor, queryTool, tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(), generatedKeys, fkName);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+        for (int i = 0; i < count; i++) {
+            StringBuilder query = new StringBuilder("INSERT INTO ");
+            query.append(generator.getTableName());
+            query.append(" (");
+            query.append(generator.getPrimaryKeyGenerator().getColumnName());
+            for (ColumnGenerator columnGenerator : generator.getColumnGenerators()) {
+                query.append(", ");
+                query.append(String.join(",", columnGenerator.getColumnNames()));
+            }
+            query.append(") VALUES (");
+            query.append(generatedKeys.get(i));
+            for (ColumnGenerator columnGenerator : generator.getColumnGenerators()) {
+                query.append(", ");
+                query.append(String.join(",", columnGenerator.getNextValues()));
+            }
+            query.append(");");
+            queryExecutor.executeQuery(query.toString());
+        }
+//        for (String fkName : graphNode.getParents().keySet()) {
+//            TableRelationGraphNode node = graphNode.getParents().get(fkName);
+//            fillChildTable(node, executor, queryTool, tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(), generatedKeys, fkName);
+//        }
+    }
+
+    private void fillChildTable(TableRelationGraphNode graphNode, ThreadPoolExecutor executor, QueryTool queryTool, TableGenerator generator, List<String> primaryKeys) {
+
+    }
+
+    private void fillParentTable(TableRelationGraphNode graphNode, ThreadPoolExecutor executor, QueryTool queryTool, TableGenerator generator, List<String> primaryKeys, String foreignKeyName) throws SQLException {
+        Random random = new Random();
+        List<String> generatedKeys = new ArrayList<>();
+        List<Integer> keysMap = new ArrayList<>();
+        for (int j = 0; j < primaryKeys.size(); j++) {
+            int count = random.nextInt(2, 7);
+            for (int i = 0; i < count; i++) {
+                generatedKeys.add(generator.getPrimaryKeyGenerator().nextValue());
+            }
+            keysMap.add(count);
+        }
+        //System.out.println(generatedKeys);
+        for (String fkName : graphNode.getParents().keySet()) {
+            TableRelationGraphNode node = graphNode.getParents().get(fkName);
+            executor.execute(() -> {
+                try {
+                    fillParentTable(node, executor, queryTool, tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(), generatedKeys, fkName);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+        int sum = 0;
+        for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {
+            int count = keysMap.get(countNumber);
+            for (int i = sum; i < sum + count; i++) {
+                StringBuilder query = new StringBuilder("INSERT INTO ");
+                query.append(generator.getTableName());
+                query.append(" (");
+                query.append(generator.getPrimaryKeyGenerator().getColumnName());
+                for (ColumnGenerator columnGenerator : generator.getColumnGenerators()) {
+                    query.append(", ");
+                    query.append(String.join(",", columnGenerator.getColumnNames()));
+                }
+                query.append(", ");
+                query.append(foreignKeyName);
+                query.append(") VALUES (");
+                query.append(generatedKeys.get(i));
+                for (ColumnGenerator columnGenerator : generator.getColumnGenerators()) {
+                    query.append(", ");
+                    query.append(String.join(",", columnGenerator.getNextValues()));
+                }
+                query.append(", ");
+                query.append(primaryKeys.get(countNumber));
+                query.append(");");
+                queryExecutor.executeQuery(query.toString());
+            }
+            sum += count;
+        }
     }
 
 }

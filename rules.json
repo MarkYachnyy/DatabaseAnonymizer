@@ -3,7 +3,7 @@
     {
       "columnName": "age",
       "tableName": "users",
-      "nullChance": 0,
+      "nullChance": 0.01,
       "distributionType": "UNIFORM",
       "params": [
         18,

@@ -1,4 +1,4 @@
-package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator.primary_key;
+package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.primary_key_generator;
 
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.distribution.discrete.DiscreteUniformDistribution;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator.ColumnGenerator;
@@ -6,7 +6,7 @@ import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generator.type_generator.St
 
 import java.util.List;
 
-public class ObjectIDPrimaryKeyGenerator implements ColumnGenerator {
+public class ObjectIDPrimaryKeyGenerator implements PrimaryKeyGenerator {
 
     private final String columnName;
     private final StringGenerator stringGenerator;
@@ -17,17 +17,12 @@ public class ObjectIDPrimaryKeyGenerator implements ColumnGenerator {
     }
 
     @Override
-    public float getNullChance() {
-        return 0;
+    public String nextValue() {
+        return stringGenerator.getNextValues()[0];
     }
 
     @Override
-    public String[] getColumnNames() {
-        return new String[]{columnName};
-    }
-
-    @Override
-    public String[] getNextValues() {
-        return new String[]{stringGenerator.getNextValues()[0]};
+    public String getColumnName() {
+        return columnName;
     }
 }

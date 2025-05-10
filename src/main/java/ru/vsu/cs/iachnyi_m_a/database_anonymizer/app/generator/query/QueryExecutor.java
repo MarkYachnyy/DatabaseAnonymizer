@@ -12,7 +12,7 @@ public class QueryExecutor {
     }
 
     public void executeQuery(String query) throws SQLException {
-        //System.out.println(query);
+        System.out.println(query);
         Statement statement = conn.createStatement();
         statement.execute(query);
     }
