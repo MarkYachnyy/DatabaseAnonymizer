@@ -21,6 +21,7 @@ public class StringRule implements Rule {
                 columnName,
                 nullChance,
                 allowedCharacters,
+                lengthRule == null ? null :
                 DiscreteDistributionFactory.createDiscreteDistribution(lengthRule.getDistributionType(), lengthRule.getParams()));
     }
 }

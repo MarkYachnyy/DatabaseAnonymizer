@@ -18,7 +18,7 @@ import java.sql.SQLException;
 public class Main {
 
     public static void main(String[] args) throws SQLException, IOException {
-        HikariDataSource source = HikariDataSourceFactory.create("anonymizer", "postgres", "1234", 20000, 10);
+        HikariDataSource source = HikariDataSourceFactory.create("anonymizer", "postgres", "1234", 1000, 10);
         DatabaseGenerator generator = new DatabaseGenerator(new QueryTool(source));
         generator.fillDatabase(
                 new Gson().fromJson(readFileToString("./test_data/schema.json"), DatabaseSchema.class),

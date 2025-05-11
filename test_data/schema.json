@@ -12,8 +12,96 @@
           "type": "VARCHAR"
         },
         {
+          "name": "email",
+          "type": "VARCHAR"
+        },
+        {
           "name": "age",
           "type": "INTEGER"
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "date",
+          "type": "DATE"
+        }
+      ]
+    },
+    {
+      "name": "orderitems",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID"
+        },
+        {
+          "name": "product_id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "order_id",
+          "type": "UUID"
+        },
+        {
+          "name": "quantity",
+          "type": "INTEGER"
+        }
+      ]
+    },
+    {
+      "name": "products",
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "seller_id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "price",
+          "type": "INTEGER"
+        },
+        {
+          "name": "rating",
+          "type": "FLOAT"
+        }
+      ]
+    },
+    {
+      "name": "sellers",
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT"
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "website",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "rating",
+          "type": "FLOAT"
         }
       ]
     },
@@ -22,36 +110,15 @@
       "columns": [
         {
           "name": "id",
-          "type": "UUID"
-        },
-        {
-          "name": "number",
-          "type": "VARCHAR"
+          "type": "OBJECT_ID"
         },
         {
           "name": "user_id",
           "type": "BIGINT"
         },
         {
-          "name": "expiration_date",
-          "type": "DATE"
-        }
-      ]
-    },
-    {
-      "name": "enters",
-      "columns" : [
-        {
-          "name" : "id",
-          "type" : "BIGINT"
-        },
-        {
-          "name" : "user_id",
-          "type" : "BIGINT"
-        },
-        {
-          "name" : "enter_date",
-          "type" : "DATE"
+          "name": "number",
+          "type": "VARCHAR"
         }
       ]
     }

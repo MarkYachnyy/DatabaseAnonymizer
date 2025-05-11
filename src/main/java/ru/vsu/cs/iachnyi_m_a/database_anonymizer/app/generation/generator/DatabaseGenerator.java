@@ -23,6 +23,7 @@ import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator.type_g
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -44,13 +45,14 @@ public class DatabaseGenerator {
 
         List<Table> tables = schema.getTables();
         tableGenerators = new ArrayList<>();
+        QueryExecutor executor = queryTool.getQueryExecutor();
         for (Table table : tables) {
             try {
-                queryTool.getQueryExecutor().executeQuery("DROP TABLE " + table.getName() + ";");
+                executor.executeQuery("DROP TABLE " + table.getName() + ";");
             } catch (PSQLException e) {
 
             }
-            queryTool.getQueryExecutor().executeQuery(getTableCreationQuery(table));
+            executor.executeQuery(getTableCreationQuery(table));
             tableGenerators.add(new TableGenerator(table.getName()));
         }
 
@@ -81,7 +83,7 @@ public class DatabaseGenerator {
         for (Rule rule : allRules) {
             TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
             tableGenerator.getColumnGenerators().add(rule.toGenerator());
-            System.out.println(Arrays.toString(tableGenerator.getColumnGenerators().toArray()));
+            //System.out.println(Arrays.toString(tableGenerator.getColumnGenerators().toArray()));
         }
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ТАБЛИЦ
@@ -106,13 +108,301 @@ public class DatabaseGenerator {
             sourceNode.getChildren().add(new RelationMapElement(
                     foreignKey.getSourceColumnName(),
                     targetNode,
-                    DiscreteDistributionFactory.createDiscreteDistribution(DiscreteDistributionType.valueOf(foreignKey.getSourceDistributionType()), foreignKey.getSourceDistributionParams())));
+                    DiscreteDistributionFactory.createDiscreteDistribution(DiscreteDistributionType.valueOf(foreignKey.getSourceDistributionType()), foreignKey.getSourceDistributionParams()),
+                    foreignKey.getSourceZeroChance(),
+                    foreignKey.getTargetZeroChance()));
             targetNode.getParents().add(new RelationMapElement(
                     foreignKey.getSourceColumnName(),
                     sourceNode,
-                    DiscreteDistributionFactory.createDiscreteDistribution(DiscreteDistributionType.valueOf(foreignKey.getSourceDistributionType()), foreignKey.getSourceDistributionParams())));
+                    DiscreteDistributionFactory.createDiscreteDistribution(DiscreteDistributionType.valueOf(foreignKey.getSourceDistributionType()), foreignKey.getSourceDistributionParams()),
+                    foreignKey.getSourceZeroChance(),
+                    foreignKey.getTargetZeroChance()));
         }
         return graph;
+    }
+
+
+    private void fillFirstTable(TableRelationGraphNode graphNode,
+                                ThreadPoolExecutor threadExecutor,
+                                QueryTool queryTool,
+                                TableGenerator tableGenerator,
+                                int count) throws SQLException {
+        //ГЕНЕРАЦИЯ НАБОРА ПК
+
+        List<String> generatedKeys = IntStream.range(0, count).mapToObj(i -> tableGenerator.getPrimaryKeyGenerator().nextValue()).toList();
+
+        //ЗАПУСК ЗАПОЛНЕНИЯ РОДИТЕЛЬСКИХ ТАБЛИЦ
+
+        for (RelationMapElement element : graphNode.getParents()) {
+            String fkName = element.getForeignKeyName();
+            TableRelationGraphNode node = element.getNode();
+            threadExecutor.execute(() -> {
+                try {
+                    fillParentTable(node,
+                            threadExecutor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(generatedKeys, element.getSourceZeroChance()),
+                            fkName,
+                            element.getDistribution(),
+                            element.getTargetZeroChance());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        //ЗАПОЛНЕНИЕ СЕБЯ
+
+        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+        for (int i = 0; i < count; i++) {
+            List<String> columnNames = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
+            values.add(generatedKeys.get(i));
+            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
+                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
+                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
+            }
+            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
+        }
+
+        //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
+
+        for (RelationMapElement element : graphNode.getChildren()) {
+            threadExecutor.execute(() -> {
+                TableRelationGraphNode node = element.getNode();
+                try {
+                    fillChildTable(element.getNode(),
+                            threadExecutor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(generatedKeys, element.getTargetZeroChance()),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
+                            element.getForeignKeyName(),
+                            element.getDistribution(),
+                            element.getSourceZeroChance());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+        }
+    }
+
+    private void fillChildTable(TableRelationGraphNode graphNode,
+                                ThreadPoolExecutor threadExecutor,
+                                QueryTool queryTool,
+                                TableGenerator tableGenerator,
+                                String parentTableName,
+                                List<String> parentPrimaryKeyValues,
+                                String parentPrimaryKeyName,
+                                String parentForeignKeyName,
+                                DiscreteDistribution distribution,
+                                float sourceZeroChance) throws SQLException {
+
+        List<String> generatedNonNullKeys = new ArrayList<>();
+        List<String> generatedNullKeys = new ArrayList<>();
+        List<Integer> keysMap = new ArrayList<>();
+
+        //ГЕНЕРАЦИЯ НАБОРА ПЕРВИЧНЫХ КЛЮЧЕЙ
+
+        int pkLeft = parentPrimaryKeyValues.size();
+        while (pkLeft >= 0) {
+            int count = distribution.next();
+            pkLeft -= count;
+            keysMap.add(count);
+            generatedNonNullKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
+        }
+        keysMap.removeLast();
+        generatedNonNullKeys.removeLast();
+        float targetZeroRatio = sourceZeroChance / (1 - sourceZeroChance);
+        for (int i = 0; i < (int) (generatedNonNullKeys.size() * targetZeroRatio); i++) {
+            generatedNullKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
+        }
+        List<String> allGeneratedKeys = new ArrayList<>(generatedNonNullKeys);
+        allGeneratedKeys.addAll(generatedNullKeys);
+
+        //ЗАПУСК ЗАПОЛНЕНИЯ РОДИТЕЛЬСКИХ ТАБЛИЦ
+
+        for (RelationMapElement element : graphNode.getParents()) {
+            String fkName = element.getForeignKeyName();
+            TableRelationGraphNode node = element.getNode();
+            if (node.getTableName().equals(parentTableName)) continue;
+            threadExecutor.execute(() -> {
+                try {
+                    fillParentTable(node,
+                            threadExecutor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(allGeneratedKeys, element.getSourceZeroChance()),
+                            fkName,
+                            element.getDistribution(),
+                            element.getTargetZeroChance());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        //ЗАПОЛНЕНИЕ СЕБЯ + ОБНОВЛЕНИЕ РОДИТЕЛЬСКОЙ ТАБЛИЦЫ
+
+        int updatedRows = 0;
+        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+        for (int i = 0; i < keysMap.size(); i++) {
+            List<String> columnNames = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
+            values.add(generatedNonNullKeys.get(i));
+            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
+                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
+                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
+            }
+            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
+            for (int j = updatedRows; j < keysMap.get(i); j++) {
+                queryExecutor.executeQuery(createUpdateQuery(parentTableName, parentPrimaryKeyName, parentPrimaryKeyValues.get(j), parentForeignKeyName, generatedNonNullKeys.get(i)));
+            }
+        }
+
+        for(String nullKey: generatedNullKeys){
+            List<String> columnNames = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
+            values.add(nullKey);
+            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
+                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
+                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
+            }
+            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
+        }
+
+        //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
+
+        for (RelationMapElement element : graphNode.getChildren()) {
+            threadExecutor.execute(() -> {
+                TableRelationGraphNode node = element.getNode();
+                try {
+                    fillChildTable(element.getNode(),
+                            threadExecutor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(allGeneratedKeys, element.getTargetZeroChance()),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
+                            element.getForeignKeyName(),
+                            element.getDistribution(),
+                            element.getSourceZeroChance()
+                    );
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+        }
+    }
+
+    private void fillParentTable(TableRelationGraphNode graphNode,
+                                 ThreadPoolExecutor executor,
+                                 QueryTool queryTool,
+                                 TableGenerator tableGenerator,
+                                 String childTableName,
+                                 List<String> childPrimaryKeyValues,
+                                 String childForeignKeyName,
+                                 DiscreteDistribution distribution,
+                                 float sourceZeroChance) throws SQLException {
+        List<String> generatedNonNullKeys = new ArrayList<>();
+        List<String> generatedNullKeys = new ArrayList<>();
+        List<Integer> keysMap = new ArrayList<>();
+        float sourceZeroRatio = sourceZeroChance / (1 - sourceZeroChance);
+        for (int j = 0; j < childPrimaryKeyValues.size(); j++) {
+            int count = distribution.next();
+            for (int i = 0; i < count; i++) {
+                generatedNonNullKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
+            }
+            keysMap.add(count);
+        }
+        for (int i = 0; i < (int) (generatedNonNullKeys.size() * sourceZeroRatio); i++) {
+            generatedNullKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
+        }
+        List<String> allGeneratedKeys = new ArrayList<>(generatedNonNullKeys);
+        allGeneratedKeys.addAll(generatedNullKeys);
+        for (RelationMapElement element : graphNode.getParents()) {
+            String fkName = element.getForeignKeyName();
+            TableRelationGraphNode node = element.getNode();
+            executor.execute(() -> {
+                try {
+                    fillParentTable(node,
+                            executor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(allGeneratedKeys, element.getSourceZeroChance()),
+                            fkName,
+                            element.getDistribution(),
+                            element.getTargetZeroChance());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+        int sum = 0;
+        for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {
+            int count = keysMap.get(countNumber);
+
+            for (int i = sum; i < sum + count; i++) {
+                List<String> columnNames = new ArrayList<>();
+                List<String> values = new ArrayList<>();
+                columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
+                columnNames.add(childForeignKeyName);
+                values.add(generatedNonNullKeys.get(i));
+                values.add(childPrimaryKeyValues.get(countNumber));
+                for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
+                    columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
+                    values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
+                }
+                queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
+            }
+            sum += count;
+        }
+
+        for (String nullKey : generatedNullKeys) {
+            List<String> columnNames = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
+            values.add(nullKey);
+            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
+                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
+                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
+            }
+            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
+        }
+
+        for (RelationMapElement element : graphNode.getChildren()) {
+            TableRelationGraphNode node = element.getNode();
+            if (node.getTableName().equals(childTableName)) continue;
+            executor.execute(() -> {
+                try {
+                    fillChildTable(element.getNode(),
+                            executor,
+                            queryTool,
+                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
+                            tableGenerator.getTableName(),
+                            reduceRandomly(allGeneratedKeys, element.getTargetZeroChance()),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
+                            element.getForeignKeyName(),
+                            element.getDistribution(),
+                            element.getSourceZeroChance()
+                    );
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+        }
     }
 
     private String getTableCreationQuery(Table table) {
@@ -157,196 +447,6 @@ public class DatabaseGenerator {
                 type;
     }
 
-    private void fillFirstTable(TableRelationGraphNode graphNode,
-                                ThreadPoolExecutor executor,
-                                QueryTool queryTool,
-                                TableGenerator tableGenerator,
-                                int count) throws SQLException {
-        List<String> generatedKeys = IntStream.range(0, count).mapToObj(i -> tableGenerator.getPrimaryKeyGenerator().nextValue()).toList();
-        for (RelationMapElement element : graphNode.getParents()) {
-            String fkName = element.getForeignKeyName();
-            TableRelationGraphNode node = element.getNode();
-            executor.execute(() -> {
-                try {
-                    fillParentTable(node,
-                            executor,
-                            queryTool,
-                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                            tableGenerator.getTableName(),
-                            generatedKeys,
-                            fkName,
-                            element.getDistribution());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
-        for (int i = 0; i < count; i++) {
-            List<String> columnNames = new ArrayList<>();
-            List<String> values = new ArrayList<>();
-            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
-            values.add(generatedKeys.get(i));
-            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
-                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
-                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
-
-            }
-            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
-        }
-        for (RelationMapElement element : graphNode.getChildren()) {
-            TableRelationGraphNode node = element.getNode();
-            fillChildTable(element.getNode(),
-                    executor,
-                    queryTool,
-                    tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                    tableGenerator.getTableName(),
-                    generatedKeys,
-                    tableGenerator.getPrimaryKeyGenerator().getColumnName(),
-                    element.getForeignKeyName(),
-                    element.getDistribution());
-        }
-    }
-
-    private void fillChildTable(TableRelationGraphNode graphNode,
-                                ThreadPoolExecutor executor,
-                                QueryTool queryTool,
-                                TableGenerator tableGenerator,
-                                String parentTableName,
-                                List<String> parentPrimaryKeyValues,
-                                String parentPrimaryKeyName,
-                                String parentForeignKeyName,
-                                DiscreteDistribution distribution) throws SQLException {
-        List<String> generatedKeys = new ArrayList<>();
-        List<Integer> keysMap = new ArrayList<>();
-        int pkLeft = parentPrimaryKeyValues.size();
-        while (pkLeft > 0) {
-            int count = distribution.next();
-            pkLeft -= count;
-            keysMap.add(count);
-            generatedKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
-        }
-        keysMap.removeLast();
-        generatedKeys.removeLast();
-        for (RelationMapElement element : graphNode.getParents()) {
-            String fkName = element.getForeignKeyName();
-            TableRelationGraphNode node = element.getNode();
-            if (node.getTableName().equals(parentTableName)) continue;
-            executor.execute(() -> {
-                try {
-                    fillParentTable(node,
-                            executor,
-                            queryTool,
-                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                            tableGenerator.getTableName(),
-                            generatedKeys,
-                            fkName,
-                            element.getDistribution());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-        int updatedRows = 0;
-        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
-        for (int i = 0; i < keysMap.size(); i++) {
-            List<String> columnNames = new ArrayList<>();
-            List<String> values = new ArrayList<>();
-            columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
-            values.add(generatedKeys.get(i));
-            for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
-                columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
-                values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
-            }
-            queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
-            for (int j = updatedRows; j < keysMap.get(i); j++) {
-                queryExecutor.executeQuery(createUpdateQuery(parentTableName, parentPrimaryKeyName, parentPrimaryKeyValues.get(j), parentForeignKeyName, generatedKeys.get(i)));
-            }
-        }
-        for (RelationMapElement element : graphNode.getChildren()) {
-            TableRelationGraphNode node = element.getNode();
-            fillChildTable(element.getNode(),
-                    executor,
-                    queryTool,
-                    tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                    tableGenerator.getTableName(),
-                    generatedKeys,
-                    tableGenerator.getPrimaryKeyGenerator().getColumnName(),
-                    element.getForeignKeyName(),
-                    element.getDistribution());
-        }
-    }
-
-    private void fillParentTable(TableRelationGraphNode graphNode,
-                                 ThreadPoolExecutor executor,
-                                 QueryTool queryTool,
-                                 TableGenerator tableGenerator,
-                                 String childTableName,
-                                 List<String> childPrimaryKeyValues,
-                                 String childForeignKeyName,
-                                 DiscreteDistribution distribution) throws SQLException {
-        List<String> generatedKeys = new ArrayList<>();
-        List<Integer> keysMap = new ArrayList<>();
-        for (int j = 0; j < childPrimaryKeyValues.size(); j++) {
-            int count = distribution.next();
-            for (int i = 0; i < count; i++) {
-                generatedKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
-            }
-            keysMap.add(count);
-        }
-        for (RelationMapElement element : graphNode.getParents()) {
-            String fkName = element.getForeignKeyName();
-            TableRelationGraphNode node = element.getNode();
-            executor.execute(() -> {
-                try {
-                    fillParentTable(node,
-                            executor,
-                            queryTool,
-                            tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                            tableGenerator.getTableName(),
-                            generatedKeys,
-                            fkName,
-                            element.getDistribution());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-        QueryExecutor queryExecutor = queryTool.getQueryExecutor();
-        int sum = 0;
-        for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {
-            int count = keysMap.get(countNumber);
-
-            for (int i = sum; i < sum + count; i++) {
-                List<String> columnNames = new ArrayList<>();
-                List<String> values = new ArrayList<>();
-                columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
-                columnNames.add(childForeignKeyName);
-                values.add(generatedKeys.get(i));
-                values.add(childPrimaryKeyValues.get(countNumber));
-                for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
-                    columnNames.addAll(Arrays.stream(columnGenerator.getColumnNames()).toList());
-                    values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
-                }
-                queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
-            }
-            sum += count;
-        }
-        for (RelationMapElement element : graphNode.getChildren()) {
-            TableRelationGraphNode node = element.getNode();
-            if (node.getTableName().equals(childTableName)) continue;
-            fillChildTable(element.getNode(),
-                    executor,
-                    queryTool,
-                    tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
-                    tableGenerator.getTableName(),
-                    generatedKeys,
-                    tableGenerator.getPrimaryKeyGenerator().getColumnName(),
-                    element.getForeignKeyName(),
-                    element.getDistribution());
-        }
-    }
-
     private String createInsertQuery(String tableName, List<String> columnNames, List<String> values) {
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(tableName);
@@ -369,6 +469,15 @@ public class DatabaseGenerator {
                 " = " +
                 primaryKeyValue;
         return query;
+    }
+
+    private List<String> reduceRandomly(List<String> original, float chanceOfReduction) {
+        List<String> res = new ArrayList<>(original);
+        Collections.shuffle(res);
+        for (int i = 0; i < (int) (original.size() * chanceOfReduction); i++) {
+            res.removeLast();
+        }
+        return res;
     }
 
 }

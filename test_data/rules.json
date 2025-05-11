@@ -3,11 +3,31 @@
     {
       "columnName": "age",
       "tableName": "users",
-      "nullChance": 0.01,
+      "nullChance": 0.1,
       "distributionType": "UNIFORM",
       "params": [
         18,
         45
+      ]
+    },
+    {
+      "columnName": "price",
+      "tableName": "products",
+      "nullChance": 0,
+      "distributionType": "UNIFORM",
+      "params": [
+        200,
+        1000
+      ]
+    },
+    {
+      "columnName": "quantity",
+      "tableName": "orderitems",
+      "nullChance": 0,
+      "distributionType": "UNIFORM",
+      "params": [
+        1,
+        4
       ]
     }
   ],
@@ -15,9 +35,9 @@
     {
       "columnName": "name",
       "tableName": "users",
-      "nullChance": 0,
+      "nullChance": 0.01,
       "allowedCharacters": [
-        "abcdefghijklmnopqrstuvwxyz"
+        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
       ],
       "lengthRule": {
         "distributionType": "UNIFORM",
@@ -28,33 +48,103 @@
       }
     },
     {
-      "columnName": "number",
-      "tableName": "cards",
+      "columnName": "email",
+      "tableName": "users",
       "nullChance": 0,
       "allowedCharacters": [
-        "0123456789"
+        "abcdef"
       ],
       "lengthRule": {
         "distributionType": "UNIFORM",
         "params": [
-          16,
-          17
+          8,
+          13
+        ]
+      }
+    },
+    {
+      "columnName": "number",
+      "tableName": "cards",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "0123456789","0123456789","0123456789","0123456789","0123456789","0123456789","0123456789","0123456789"
+      ],
+      "lengthRule": null
+    },
+    {
+      "columnName": "name",
+      "tableName": "products",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+      ],
+      "lengthRule": {
+        "distributionType": "UNIFORM",
+        "params": [
+          8,
+          20
+        ]
+      }
+    },
+    {
+      "columnName": "name",
+      "tableName": "sellers",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+      ],
+      "lengthRule": {
+        "distributionType": "UNIFORM",
+        "params": [
+          8,
+          20
+        ]
+      }
+    },
+    {
+      "columnName": "website",
+      "tableName": "sellers",
+      "nullChance": 0,
+      "allowedCharacters": [
+        "abcdefghijklmnopqrstuvwxyz"
+      ],
+      "lengthRule": {
+        "distributionType": "UNIFORM",
+        "params": [
+          8,
+          16
         ]
       }
     }
   ],
   "dateRules": [
     {
-      "columnName": "expiration_date",
-      "tableName": "cards",
+      "columnName": "date",
+      "tableName": "orders",
       "startDate" : "2022-01-01",
       "endDate": "2024-12-31"
+    }
+  ],
+  "floatRules": [
+    {
+      "columnName": "rating",
+      "tableName": "products",
+      "nullChance": 0.02,
+      "distributionType": "UNIFORM",
+      "params": [
+        4,
+        0.3
+      ]
     },
     {
-      "columnName": "enter_date",
-      "tableName": "enters",
-      "startDate" : "2022-01-01",
-      "endDate": "2024-12-31"
+      "columnName": "rating",
+      "tableName": "sellers",
+      "nullChance": 0.25,
+      "distributionType": "UNIFORM",
+      "params": [
+        4,
+        0.3
+      ]
     }
   ]
 }

@@ -5,11 +5,23 @@
       "columnName": "id"
     },
     {
-      "tableName": "cards",
+      "tableName": "products",
       "columnName": "id"
     },
     {
-      "tableName": "enters",
+      "tableName": "orders",
+      "columnName": "id"
+    },
+    {
+      "tableName": "orderitems",
+      "columnName": "id"
+    },
+    {
+      "tableName": "sellers",
+      "columnName": "id"
+    },
+    {
+      "tableName": "cards",
       "columnName": "id"
     }
   ],
@@ -20,19 +32,49 @@
       "targetTableName": "users",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [2, 7],
-      "sourceZeroChance": 0,
-      "targetZeroChance": 0.01
+      "sourceDistributionParams": [1, 2],
+      "sourceZeroChance": 0.05,
+      "targetZeroChance": 0
     },
     {
-      "sourceTableName": "enters",
+      "sourceTableName": "orders",
       "sourceColumnName": "user_id",
       "targetTableName": "users",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [3, 6],
+      "sourceDistributionParams": [1, 4],
+      "sourceZeroChance": 0.1,
+      "targetZeroChance": 0
+    },
+    {
+      "sourceTableName": "orderitems",
+      "sourceColumnName": "order_id",
+      "targetTableName": "orders",
+      "targetColumnName": "id",
+      "sourceDistributionType": "UNIFORM",
+      "sourceDistributionParams": [2, 5],
       "sourceZeroChance": 0,
-      "targetZeroChance": 0.01
+      "targetZeroChance": 0
+    },
+    {
+      "sourceTableName": "orderitems",
+      "sourceColumnName": "product_id",
+      "targetTableName": "products",
+      "targetColumnName": "id",
+      "sourceDistributionType": "UNIFORM",
+      "sourceDistributionParams": [3, 10],
+      "sourceZeroChance": 0.05,
+      "targetZeroChance": 0
+    },
+    {
+      "sourceTableName": "products",
+      "sourceColumnName": "seller_id",
+      "targetTableName": "sellers",
+      "targetColumnName": "id",
+      "sourceDistributionType": "UNIFORM",
+      "sourceDistributionParams": [3, 6],
+      "sourceZeroChance": 0.1,
+      "targetZeroChance": 0
     }
   ]
 }

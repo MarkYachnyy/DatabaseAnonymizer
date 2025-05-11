@@ -10,4 +10,6 @@ public class RelationMapElement {
     private String foreignKeyName;
     private TableRelationGraphNode node;
     private DiscreteDistribution distribution;
+    private float sourceZeroChance;
+    private float targetZeroChance;
 }
