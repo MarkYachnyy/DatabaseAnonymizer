@@ -1,0 +1,38 @@
+{
+  "primaryKeys": [
+    {
+      "tableName": "users",
+      "columnName": "id"
+    },
+    {
+      "tableName": "cards",
+      "columnName": "id"
+    },
+    {
+      "tableName": "enters",
+      "columnName": "id"
+    }
+  ],
+  "foreignKeys": [
+    {
+      "sourceTableName": "cards",
+      "sourceColumnName": "user_id",
+      "targetTableName": "users",
+      "targetColumnName": "id",
+      "sourceDistributionType": "UNIFORM",
+      "sourceDistributionParams": [2, 7],
+      "sourceZeroChance": 0,
+      "targetZeroChance": 0.01
+    },
+    {
+      "sourceTableName": "enters",
+      "sourceColumnName": "user_id",
+      "targetTableName": "users",
+      "targetColumnName": "id",
+      "sourceDistributionType": "UNIFORM",
+      "sourceDistributionParams": [3, 6],
+      "sourceZeroChance": 0,
+      "targetZeroChance": 0.01
+    }
+  ]
+}

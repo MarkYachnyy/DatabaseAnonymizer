@@ -1,0 +1,19 @@
+package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.query;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public class QueryExecutor {
+    private Connection conn;
+
+    public QueryExecutor(Connection conn) {
+        this.conn = conn;
+    }
+
+    public void executeQuery(String query) throws SQLException {
+        System.out.println(query);
+        Statement statement = conn.createStatement();
+        statement.execute(query);
+    }
+}
