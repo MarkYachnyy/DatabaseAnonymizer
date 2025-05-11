@@ -46,8 +46,8 @@
           "type" : "BIGINT"
         },
         {
-          "name" : "card_id",
-          "type" : "UUID"
+          "name" : "user_id",
+          "type" : "BIGINT"
         },
         {
           "name" : "enter_date",

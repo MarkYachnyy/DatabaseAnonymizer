@@ -26,8 +26,8 @@
     },
     {
       "sourceTableName": "enters",
-      "sourceColumnName": "card_id",
-      "targetTableName": "cards",
+      "sourceColumnName": "user_id",
+      "targetTableName": "users",
       "targetColumnName": "id",
       "sourceMinCount": 0,
       "sourceMaxCount": 10,
