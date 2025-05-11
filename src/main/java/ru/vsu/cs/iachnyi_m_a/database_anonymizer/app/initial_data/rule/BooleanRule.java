@@ -12,7 +12,7 @@ public class BooleanRule implements Rule{
     private float nullChance;
 
     @Override
-    public ColumnGenerator toGenerator() {
-        return new BooleanGenerator(columnName, nullChance, trueChance);
+    public ColumnGenerator toGenerator(boolean unique) {
+        return new BooleanGenerator(columnName, nullChance, trueChance, unique);
     }
 }

@@ -2,16 +2,25 @@ package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator.type_
 
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.discrete.DiscreteDistribution;
 
-public class IntegerGenerator implements ColumnGenerator {
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class IntegerGenerator extends ColumnGenerator {
 
     private final String columnName;
     private final float nullChance;
     private final DiscreteDistribution distribution;
+    private final boolean unique;
+    private final List<Set<String>> alreadyGeneratedValues;
 
-    public IntegerGenerator(String columnName, float nullChance, DiscreteDistribution distribution) {
+
+    public IntegerGenerator(String columnName, float nullChance, DiscreteDistribution distribution, boolean unique) {
         this.columnName = columnName;
         this.nullChance = nullChance;
         this.distribution = distribution;
+        this.unique = unique;
+        this.alreadyGeneratedValues = List.of(new HashSet<>());
     }
 
     @Override
@@ -25,7 +34,17 @@ public class IntegerGenerator implements ColumnGenerator {
     }
 
     @Override
-    public String[] getNextValues() {
+    protected String[] generateValues() {
         return new String[]{String.valueOf(distribution.next())};
+    }
+
+    @Override
+    public boolean isUnique() {
+        return unique;
+    }
+
+    @Override
+    public List<Set<String>> getAlreadyGeneratedValues() {
+        return alreadyGeneratedValues;
     }
 }

@@ -2,6 +2,7 @@ package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule;
 
 import lombok.Data;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.interval.IntervalRule;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.string.StringRule;
 
 import java.util.List;
 

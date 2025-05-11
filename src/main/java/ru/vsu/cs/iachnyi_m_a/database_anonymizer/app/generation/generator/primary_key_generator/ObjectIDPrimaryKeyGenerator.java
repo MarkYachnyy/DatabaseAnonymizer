@@ -12,7 +12,7 @@ public class ObjectIDPrimaryKeyGenerator implements PrimaryKeyGenerator {
 
     public ObjectIDPrimaryKeyGenerator(String columnName) {
         this.columnName = columnName;
-        this.stringGenerator = new StringGenerator(null, 0, List.of("0123456789abcdef"), new DiscreteUniformDistribution(24, 25));
+        this.stringGenerator = new StringGenerator(null, 0, List.of("0123456789abcdef"), new DiscreteUniformDistribution(24, 25), true);
     }
 
     @Override

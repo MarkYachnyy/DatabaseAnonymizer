@@ -15,10 +15,10 @@ public class FloatRule implements Rule {
     private float nullChance;
 
     @Override
-    public ColumnGenerator toGenerator() {
+    public ColumnGenerator toGenerator(boolean unique) {
         return new FloatGenerator(
                 columnName,
                 nullChance,
-                ContinuousDistributionFactory.createContinuousDistribution(distributionType, params));
+                ContinuousDistributionFactory.createContinuousDistribution(distributionType, params), unique);
     }
 }

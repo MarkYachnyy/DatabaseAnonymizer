@@ -24,8 +24,8 @@ public class Main {
                 new Gson().fromJson(readFileToString("./test_data/schema.json"), DatabaseSchema.class),
                 new Gson().fromJson(readFileToString("./test_data/constraint.json"), ConstraintSet.class),
                 new Gson().fromJson(readFileToString("./test_data/rules.json"), RuleSet.class),
-                "cards",
-                100);
+                "users",
+                1000);
     }
 
     public static String readFileToString(String filePath) throws IOException {

@@ -15,7 +15,7 @@ public class IntegerRule implements Rule {
 
 
     @Override
-    public ColumnGenerator toGenerator() {
-        return new IntegerGenerator(columnName, nullChance, DiscreteDistributionFactory.createDiscreteDistribution(distributionType, params));
+    public ColumnGenerator toGenerator(boolean unique) {
+        return new IntegerGenerator(columnName, nullChance, DiscreteDistributionFactory.createDiscreteDistribution(distributionType, params), unique);
     }
 }

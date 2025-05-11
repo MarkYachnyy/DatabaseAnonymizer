@@ -82,8 +82,7 @@ public class DatabaseGenerator {
         if (ruleSet.getDateRules() != null) allRules.addAll(ruleSet.getDateRules());
         for (Rule rule : allRules) {
             TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
-            tableGenerator.getColumnGenerators().add(rule.toGenerator());
-            //System.out.println(Arrays.toString(tableGenerator.getColumnGenerators().toArray()));
+            tableGenerator.getColumnGenerators().add(rule.toGenerator(constraintSet.getUniques().stream().anyMatch(u -> u.getColumnName().equals(rule.getColumnName()) && u.getTableName().equals(rule.getTableName()))));
         }
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ТАБЛИЦ
@@ -155,6 +154,7 @@ public class DatabaseGenerator {
 
         //ЗАПОЛНЕНИЕ СЕБЯ
 
+        System.out.println("FILLING TABLE " + tableGenerator.getTableName());
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
         for (int i = 0; i < count; i++) {
             List<String> columnNames = new ArrayList<>();
@@ -250,6 +250,7 @@ public class DatabaseGenerator {
 
         //ЗАПОЛНЕНИЕ СЕБЯ + ОБНОВЛЕНИЕ РОДИТЕЛЬСКОЙ ТАБЛИЦЫ
 
+        System.out.println("FILLING TABLE " + tableGenerator.getTableName());
         int updatedRows = 0;
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
         for (int i = 0; i < keysMap.size(); i++) {
@@ -267,7 +268,7 @@ public class DatabaseGenerator {
             }
         }
 
-        for(String nullKey: generatedNullKeys){
+        for (String nullKey : generatedNullKeys) {
             List<String> columnNames = new ArrayList<>();
             List<String> values = new ArrayList<>();
             columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
@@ -348,6 +349,8 @@ public class DatabaseGenerator {
                 }
             });
         }
+
+        System.out.println("FILLING TABLE " + tableGenerator.getTableName());
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
         int sum = 0;
         for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {

@@ -19,7 +19,7 @@ public class DateRule implements Rule {
     private float nullChance;
 
     @Override
-    public ColumnGenerator toGenerator() {
+    public ColumnGenerator toGenerator(boolean unique) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate date1;
         LocalDate date2;
@@ -30,6 +30,7 @@ public class DateRule implements Rule {
                 columnName,
                 nullChance,
                 date1.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-                date2.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+                date2.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+                unique);
     }
 }

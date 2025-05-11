@@ -32,7 +32,10 @@
       "targetTableName": "users",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [1, 2],
+      "sourceDistributionParams": [
+        1,
+        2
+      ],
       "sourceZeroChance": 0.05,
       "targetZeroChance": 0
     },
@@ -42,7 +45,10 @@
       "targetTableName": "users",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [1, 4],
+      "sourceDistributionParams": [
+        1,
+        4
+      ],
       "sourceZeroChance": 0.1,
       "targetZeroChance": 0
     },
@@ -52,7 +58,10 @@
       "targetTableName": "orders",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [2, 5],
+      "sourceDistributionParams": [
+        2,
+        5
+      ],
       "sourceZeroChance": 0,
       "targetZeroChance": 0
     },
@@ -62,7 +71,10 @@
       "targetTableName": "products",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [3, 10],
+      "sourceDistributionParams": [
+        3,
+        10
+      ],
       "sourceZeroChance": 0.05,
       "targetZeroChance": 0
     },
@@ -72,9 +84,23 @@
       "targetTableName": "sellers",
       "targetColumnName": "id",
       "sourceDistributionType": "UNIFORM",
-      "sourceDistributionParams": [3, 6],
+      "sourceDistributionParams": [
+        3,
+        6
+      ],
       "sourceZeroChance": 0.1,
       "targetZeroChance": 0
     }
+  ],
+  "uniques": [
+    {
+      "tableName" : "users",
+      "columnName" : "email"
+    },
+    {
+      "tableName" : "sellers",
+      "columnName" : "name"
+    }
+
   ]
 }
