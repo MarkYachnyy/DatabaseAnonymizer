@@ -36,85 +36,117 @@
       "columnName": "name",
       "tableName": "users",
       "nullChance": 0.01,
-      "allowedCharacters": [
-        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
-      ],
-      "lengthRule": {
-        "distributionType": "UNIFORM",
-        "params": [
-          8,
-          20
-        ]
-      }
+      "separator": " ",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [5, 10]
+        },
+        {
+          "allowedCharacters": [
+            "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [5, 10]
+        }
+      ]
     },
     {
       "columnName": "email",
       "tableName": "users",
       "nullChance": 0,
-      "allowedCharacters": [
-        "abcdef"
-      ],
-      "lengthRule": {
-        "distributionType": "UNIFORM",
-        "params": [
-          8,
-          13
-        ]
-      }
+      "separator": "",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "abcdefghijklmnopqrstuvwxyz"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [5, 10]
+        },
+        {
+          "allowedCharacters": [
+            "@"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [1, 2]
+        },
+        {
+          "allowedCharacters": [
+            "abcdefghijklmnopqrstuvwxyz"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [4, 7]
+        },
+        {
+          "allowedCharacters": [
+            ".", "c", "o", "m"
+          ]
+        }
+      ]
     },
     {
       "columnName": "number",
       "tableName": "cards",
       "nullChance": 0,
-      "allowedCharacters": [
-        "0123456789","0123456789","0123456789","0123456789","0123456789","0123456789","0123456789","0123456789"
-      ],
-      "lengthRule": null
+      "separator": " ",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "0123456789"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [8, 9]
+        }
+      ]
     },
     {
       "columnName": "name",
       "tableName": "products",
       "nullChance": 0,
-      "allowedCharacters": [
-        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
-      ],
-      "lengthRule": {
-        "distributionType": "UNIFORM",
-        "params": [
-          8,
-          20
-        ]
-      }
+      "separator": " ",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [8, 20]
+        }
+      ]
     },
     {
       "columnName": "name",
       "tableName": "sellers",
       "nullChance": 0,
-      "allowedCharacters": [
-        "абвгдежзиклмнопрстуфхцчшщъыьэюя"
-      ],
-      "lengthRule": {
-        "distributionType": "UNIFORM",
-        "params": [
-          8,
-          20
-        ]
-      }
+      "separator": " ",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "абвгдежзиклмнопрстуфхцчшщъыьэюя"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [8, 20]
+        }
+      ]
     },
     {
       "columnName": "website",
       "tableName": "sellers",
       "nullChance": 0,
-      "allowedCharacters": [
-        "abcdefghijklmnopqrstuvwxyz"
-      ],
-      "lengthRule": {
-        "distributionType": "UNIFORM",
-        "params": [
-          8,
-          16
-        ]
-      }
+      "separator": " ",
+      "wordRules": [
+        {
+          "allowedCharacters": [
+            "adcdef"
+          ],
+          "distributionType": "UNIFORM",
+          "distributionParams": [10, 20]
+        }
+      ]
     }
   ],
   "dateRules": [
