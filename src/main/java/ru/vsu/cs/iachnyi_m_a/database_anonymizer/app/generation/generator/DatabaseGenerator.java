@@ -3,6 +3,7 @@ package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator;
 import org.postgresql.util.PSQLException;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.discrete.DiscreteDistribution;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.discrete.DiscreteDistributionFactory;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.constraint.Unique;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.DiscreteDistributionType;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.schema.Column;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.schema.DatabaseSchema;
@@ -23,7 +24,6 @@ import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator.type_g
 
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +56,10 @@ public class DatabaseGenerator {
             tableGenerators.add(new TableGenerator(table.getName()));
         }
 
+        for(Unique unique: constraintSet.getUniques()){
+            executor.executeQuery(createUniqueConstraintQuery(unique.getTableName(), unique.getColumnName()));
+        }
+
         //ЗАПОЛНЕНИЕ ГРАФА ОТНОШЕНИЯ ТАБЛИЦ
 
         tableRelationGraph = getTableRelationGraph(schema.getTables().stream().map(Table::getName).toList(), constraintSet.getForeignKeys());
@@ -81,8 +85,14 @@ public class DatabaseGenerator {
         if (ruleSet.getStringRules() != null) allRules.addAll(ruleSet.getStringRules());
         if (ruleSet.getDateRules() != null) allRules.addAll(ruleSet.getDateRules());
         for (Rule rule : allRules) {
+            ColumnGenerator generator = rule.toGenerator(constraintSet.getUniques().stream().anyMatch(u -> u.getColumnName().equals(rule.getColumnName()) && u.getTableName().equals(rule.getTableName())));
             TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
-            tableGenerator.getColumnGenerators().add(rule.toGenerator(constraintSet.getUniques().stream().anyMatch(u -> u.getColumnName().equals(rule.getColumnName()) && u.getTableName().equals(rule.getTableName()))));
+            tableGenerator.getColumnGenerators().add(generator);
+            if(generator.getNullChance() == 0f){
+                for(String columnName: generator.getColumnNames()){
+                    executor.executeQuery(createNotNullConstraintQuery(tableGenerator.getTableName(), columnName));
+                }
+            }
         }
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ТАБЛИЦ
@@ -170,7 +180,7 @@ public class DatabaseGenerator {
         }
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + generatedKeys.size() + " ROWS");
         queryExecutor.executeQuery(
-                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
                         tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
@@ -290,7 +300,7 @@ public class DatabaseGenerator {
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
         queryExecutor.executeQuery(
-                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
                         tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         queryExecutor.executeQuery(createForeignKeyConstraintQuery(
@@ -408,7 +418,7 @@ public class DatabaseGenerator {
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
         queryExecutor.executeQuery(
-                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
                         tableGenerator.getPrimaryKeyGenerator().getColumnName()));
         queryExecutor.executeQuery(createForeignKeyConstraintQuery(
                 tableGenerator.getTableName(),
@@ -506,7 +516,7 @@ public class DatabaseGenerator {
         return query;
     }
 
-    private String createAddPrimaryKeyConstraintQuery(String tableName, String columnName) {
+    private String createPrimaryKeyConstraintQuery(String tableName, String columnName) {
         return String.format("""
                     ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;
                     ALTER TABLE %s ADD PRIMARY KEY (%s);
@@ -520,6 +530,14 @@ public class DatabaseGenerator {
                 FOREIGN KEY (%s)\s
                 REFERENCES %s(%s);
                 """, sourceTable, "fK" + new Random().nextInt(1000000), sourceColumn, targetTable, targetColumn);
+    }
+
+    private String createUniqueConstraintQuery(String tableName, String columnName) {
+        return String.format("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s);", tableName, "unique"+new Random().nextInt(1000000), columnName);
+    }
+
+    private String createNotNullConstraintQuery(String tableName, String columnName){
+        return String.format("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", tableName, columnName);
     }
 
     private List<String> reduceRandomly(List<String> original, float chanceOfReduction) {

@@ -94,13 +94,16 @@
   ],
   "uniques": [
     {
-      "tableName" : "users",
-      "columnName" : "email"
+      "tableName": "users",
+      "columnName": "email"
     },
     {
-      "tableName" : "sellers",
-      "columnName" : "name"
+      "tableName": "sellers",
+      "columnName": "name"
+    },
+    {
+      "tableName": "cards",
+      "columnName": "number"
     }
-
   ]
 }
