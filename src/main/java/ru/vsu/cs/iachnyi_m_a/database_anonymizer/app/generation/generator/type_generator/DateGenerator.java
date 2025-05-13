@@ -10,7 +10,7 @@ public class DateGenerator extends ColumnGenerator{
     private final Long maxDate;
     private final Random rand = new Random();
     private final boolean unique;
-    private final List<Set<String>> alreadyGeneratedValues;
+    private final Set<Integer> alreadyGeneratedValues;
 
 
 
@@ -20,8 +20,7 @@ public class DateGenerator extends ColumnGenerator{
         this.minDate = minDate;
         this.maxDate = maxDate;
         this.unique = unique;
-        this.alreadyGeneratedValues = List.of(new HashSet<>());
-
+        this.alreadyGeneratedValues = new HashSet<>();
     }
 
     @Override
@@ -50,7 +49,7 @@ public class DateGenerator extends ColumnGenerator{
     }
 
     @Override
-    public List<Set<String>> getAlreadyGeneratedValues() {
+    public Set<Integer> getAlreadyGeneratedValuesHashCodes() {
         return alreadyGeneratedValues;
     }
 }

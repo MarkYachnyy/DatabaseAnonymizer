@@ -10,7 +10,7 @@ public class BooleanGenerator extends ColumnGenerator{
     private final float nullChance;
     private final float trueChance;
     private final boolean unique;
-    private final List<Set<String>> alreadyGeneratedValues;
+    private final Set<Integer> alreadyGeneratedValues;
 
 
     public BooleanGenerator(String columnName, float nullChance, float trueChance, boolean unique) {
@@ -18,7 +18,7 @@ public class BooleanGenerator extends ColumnGenerator{
         this.nullChance = nullChance;
         this.trueChance = trueChance;
         this.unique = unique;
-        this.alreadyGeneratedValues = List.of(new HashSet<>());
+        this.alreadyGeneratedValues = new HashSet<>();
     }
 
     @Override
@@ -42,7 +42,7 @@ public class BooleanGenerator extends ColumnGenerator{
     }
 
     @Override
-    public List<Set<String>> getAlreadyGeneratedValues() {
+    public Set<Integer> getAlreadyGeneratedValuesHashCodes() {
         return alreadyGeneratedValues;
     }
 }

@@ -12,7 +12,7 @@ public class IntegerGenerator extends ColumnGenerator {
     private final float nullChance;
     private final DiscreteDistribution distribution;
     private final boolean unique;
-    private final List<Set<String>> alreadyGeneratedValues;
+    private final Set<Integer> alreadyGeneratedValues;
 
 
     public IntegerGenerator(String columnName, float nullChance, DiscreteDistribution distribution, boolean unique) {
@@ -20,7 +20,7 @@ public class IntegerGenerator extends ColumnGenerator {
         this.nullChance = nullChance;
         this.distribution = distribution;
         this.unique = unique;
-        this.alreadyGeneratedValues = List.of(new HashSet<>());
+        this.alreadyGeneratedValues = new HashSet<>();
     }
 
     @Override
@@ -44,7 +44,7 @@ public class IntegerGenerator extends ColumnGenerator {
     }
 
     @Override
-    public List<Set<String>> getAlreadyGeneratedValues() {
+    public Set<Integer> getAlreadyGeneratedValuesHashCodes() {
         return alreadyGeneratedValues;
     }
 }

@@ -1,7 +1,7 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule;
 
 import lombok.Data;
-import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.interval.IntervalRule;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.interval.float_interval.FloatIntervalRule;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.rule.string.StringRule;
 
 import java.util.List;
@@ -13,5 +13,5 @@ public class RuleSet {
     private List<FloatRule> floatRules;
     private List<DateRule> dateRules;
     private List<BooleanRule> booleanRules;
-    private List<IntervalRule> intervalRules;
+    private List<FloatIntervalRule> floatIntervalRules;
 }

@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public class StringGenerator extends ColumnGenerator {
 
 
-    private final List<Set<String>> alreadyGeneratedValues;
+    private final Set<Integer> alreadyGeneratedValues;
     private final String columnName;
     private final float nullChance;
     private final boolean unique;
@@ -23,7 +23,7 @@ public class StringGenerator extends ColumnGenerator {
         this.columnName = columnName;
         this.nullChance = nullChance;
         this.unique = unique;
-        this.alreadyGeneratedValues = List.of(new HashSet<>());
+        this.alreadyGeneratedValues = new HashSet<>();
         this.wordGenerators = wordGenerators;
         this.separator = separator;
     }
@@ -50,7 +50,7 @@ public class StringGenerator extends ColumnGenerator {
     }
 
     @Override
-    public List<Set<String>> getAlreadyGeneratedValues() {
+    public Set<Integer> getAlreadyGeneratedValuesHashCodes() {
         return alreadyGeneratedValues;
     }
 }

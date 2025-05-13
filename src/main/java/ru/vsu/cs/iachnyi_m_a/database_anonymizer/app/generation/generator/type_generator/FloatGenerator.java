@@ -12,7 +12,7 @@ public class FloatGenerator extends ColumnGenerator {
     private final float nullChance;
     private final ContinuousDistribution distribution;
     private final boolean unique;
-    private final List<Set<String>> alreadyGeneratedValues;
+    private final Set<Integer> alreadyGeneratedValues;
 
 
     public FloatGenerator(String columnName, float nullChance, ContinuousDistribution distribution, boolean unique) {
@@ -20,7 +20,7 @@ public class FloatGenerator extends ColumnGenerator {
         this.distribution = distribution;
         this.nullChance = nullChance;
         this.unique = unique;
-        this.alreadyGeneratedValues = List.of(new HashSet<>());
+        this.alreadyGeneratedValues = new HashSet<>();
 
     }
 
@@ -45,7 +45,7 @@ public class FloatGenerator extends ColumnGenerator {
     }
 
     @Override
-    public List<Set<String>> getAlreadyGeneratedValues() {
+    public Set<Integer> getAlreadyGeneratedValuesHashCodes() {
         return alreadyGeneratedValues;
     }
 }
