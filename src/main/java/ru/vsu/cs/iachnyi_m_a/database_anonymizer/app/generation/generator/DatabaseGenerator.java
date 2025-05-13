@@ -48,7 +48,7 @@ public class DatabaseGenerator {
         QueryExecutor executor = queryTool.getQueryExecutor();
         for (Table table : tables) {
             try {
-                executor.executeQuery("DROP TABLE " + table.getName() + ";");
+                executor.executeQuery("DROP TABLE " + table.getName() + " CASCADE;");
             } catch (PSQLException e) {
 
             }
@@ -142,6 +142,7 @@ public class DatabaseGenerator {
                             queryTool,
                             tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
                             tableGenerator.getTableName(),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
                             reduceRandomly(generatedKeys, element.getSourceZeroChance()),
                             fkName,
                             element.getDistribution(),
@@ -167,6 +168,10 @@ public class DatabaseGenerator {
             }
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
+        System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + generatedKeys.size() + " ROWS");
+        queryExecutor.executeQuery(
+                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
@@ -238,6 +243,7 @@ public class DatabaseGenerator {
                             queryTool,
                             tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
                             tableGenerator.getTableName(),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
                             reduceRandomly(allGeneratedKeys, element.getSourceZeroChance()),
                             fkName,
                             element.getDistribution(),
@@ -280,6 +286,19 @@ public class DatabaseGenerator {
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
 
+
+
+        System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
+        queryExecutor.executeQuery(
+                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+
+        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+                parentTableName,
+                parentForeignKeyName,
+                tableGenerator.getTableName(),
+                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
         for (RelationMapElement element : graphNode.getChildren()) {
@@ -310,8 +329,9 @@ public class DatabaseGenerator {
                                  QueryTool queryTool,
                                  TableGenerator tableGenerator,
                                  String childTableName,
+                                 String childPrimaryKeyName,
                                  List<String> childPrimaryKeyValues,
-                                 String childForeignKeyName,
+                                 String parentForeignKeyName,
                                  DiscreteDistribution distribution,
                                  float sourceZeroChance) throws SQLException {
         List<String> generatedNonNullKeys = new ArrayList<>();
@@ -340,6 +360,7 @@ public class DatabaseGenerator {
                             queryTool,
                             tableGenerators.stream().filter(tg -> tg.getTableName().equals(node.getTableName())).findFirst().get(),
                             tableGenerator.getTableName(),
+                            tableGenerator.getPrimaryKeyGenerator().getColumnName(),
                             reduceRandomly(allGeneratedKeys, element.getSourceZeroChance()),
                             fkName,
                             element.getDistribution(),
@@ -351,6 +372,7 @@ public class DatabaseGenerator {
         }
 
         System.out.println("FILLING TABLE " + tableGenerator.getTableName());
+
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
         int sum = 0;
         for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {
@@ -360,7 +382,7 @@ public class DatabaseGenerator {
                 List<String> columnNames = new ArrayList<>();
                 List<String> values = new ArrayList<>();
                 columnNames.add(tableGenerator.getPrimaryKeyGenerator().getColumnName());
-                columnNames.add(childForeignKeyName);
+                columnNames.add(parentForeignKeyName);
                 values.add(generatedNonNullKeys.get(i));
                 values.add(childPrimaryKeyValues.get(countNumber));
                 for (ColumnGenerator columnGenerator : tableGenerator.getColumnGenerators()) {
@@ -383,6 +405,16 @@ public class DatabaseGenerator {
             }
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
+
+        System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
+        queryExecutor.executeQuery(
+                createAddPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+                tableGenerator.getTableName(),
+                parentForeignKeyName,
+                childTableName,
+                childPrimaryKeyName));
 
         for (RelationMapElement element : graphNode.getChildren()) {
             TableRelationGraphNode node = element.getNode();
@@ -472,6 +504,22 @@ public class DatabaseGenerator {
                 " = " +
                 primaryKeyValue;
         return query;
+    }
+
+    private String createAddPrimaryKeyConstraintQuery(String tableName, String columnName) {
+        return String.format("""
+                    ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;
+                    ALTER TABLE %s ADD PRIMARY KEY (%s);
+                """, tableName, columnName, tableName, columnName);
+    }
+
+    private String createForeignKeyConstraintQuery(String sourceTable, String sourceColumn, String targetTable, String targetColumn) {
+        return String.format("""
+                ALTER TABLE %s
+                ADD CONSTRAINT %s
+                FOREIGN KEY (%s)\s
+                REFERENCES %s(%s);
+                """, sourceTable, "fK" + new Random().nextInt(1000000), sourceColumn, targetTable, targetColumn);
     }
 
     private List<String> reduceRandomly(List<String> original, float chanceOfReduction) {
