@@ -5,5 +5,6 @@ public enum AllenAlgebraRelation {
     MI,
     O,
     OI,
-    D
+    D,
+    DI
 }

@@ -7,11 +7,15 @@ public abstract class ColumnGenerator {
     public abstract float getNullChance();
     public abstract String[] getColumnNames();
     public String[] getNextValues(){
+        if(Math.random() < getNullChance()){
+            return new String[getColumnNames().length];
+        }
         if(!isUnique()){
             return generateValues();
         } else {
             boolean uniques = true;
             String[] res;
+
             do {
                 res = generateValues();
                 uniques = !getAlreadyGeneratedValuesHashCodes().contains(Arrays.hashCode(res));

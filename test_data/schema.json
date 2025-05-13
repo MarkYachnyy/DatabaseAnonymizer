@@ -81,6 +81,10 @@
         {
           "name": "rating",
           "type": "FLOAT"
+        },
+        {
+          "name": "discount_range",
+          "type": "FLOAT_INTERVAL"
         }
       ]
     },
@@ -119,6 +123,10 @@
         {
           "name": "number",
           "type": "VARCHAR"
+        },
+        {
+          "name": "valid_period",
+          "type": "DATE_INTERVAL"
         }
       ]
     }

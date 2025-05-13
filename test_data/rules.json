@@ -43,14 +43,20 @@
             "абвгдежзиклмнопрстуфхцчшщъыьэюя"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [5, 10]
+          "distributionParams": [
+            5,
+            10
+          ]
         },
         {
           "allowedCharacters": [
             "абвгдежзиклмнопрстуфхцчшщъыьэюя"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [5, 10]
+          "distributionParams": [
+            5,
+            10
+          ]
         }
       ]
     },
@@ -65,25 +71,37 @@
             "abcdefghijklmnopqrstuvwxyz"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [5, 10]
+          "distributionParams": [
+            5,
+            10
+          ]
         },
         {
           "allowedCharacters": [
             "@"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [1, 2]
+          "distributionParams": [
+            1,
+            2
+          ]
         },
         {
           "allowedCharacters": [
             "abcdefghijklmnopqrstuvwxyz"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [4, 7]
+          "distributionParams": [
+            4,
+            7
+          ]
         },
         {
           "allowedCharacters": [
-            ".", "c", "o", "m"
+            ".",
+            "c",
+            "o",
+            "m"
           ]
         }
       ]
@@ -99,7 +117,10 @@
             "0123456789"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [8, 9]
+          "distributionParams": [
+            8,
+            9
+          ]
         }
       ]
     },
@@ -114,7 +135,10 @@
             "абвгдежзиклмнопрстуфхцчшщъыьэюя"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [8, 20]
+          "distributionParams": [
+            8,
+            20
+          ]
         }
       ]
     },
@@ -129,7 +153,10 @@
             "абвгдежзиклмнопрстуфхцчшщъыьэюя"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [8, 20]
+          "distributionParams": [
+            8,
+            20
+          ]
         }
       ]
     },
@@ -144,7 +171,10 @@
             "adcdef"
           ],
           "distributionType": "UNIFORM",
-          "distributionParams": [10, 20]
+          "distributionParams": [
+            10,
+            20
+          ]
         }
       ]
     }
@@ -153,7 +183,7 @@
     {
       "columnName": "date",
       "tableName": "orders",
-      "startDate" : "2022-01-01",
+      "startDate": "2022-01-01",
       "endDate": "2024-12-31"
     }
   ],
@@ -176,6 +206,44 @@
       "params": [
         4,
         0.3
+      ]
+    }
+  ],
+  "dateIntervalRules": [
+    {
+      "columnName": "valid_period",
+      "tableName": "cards",
+      "nullChance": 0,
+      "relations": [
+        {
+          "start": "2018-01-01",
+          "end": "2020-12-31",
+          "relation": "OI"
+        },
+        {
+          "start": "2026-01-01",
+          "end": "2028-12-31",
+          "relation": "O"
+        }
+      ]
+    }
+  ],
+  "floatIntervalRules": [
+    {
+      "columnName": "discount_range",
+      "tableName": "products",
+      "nullChance": 0.1,
+      "relations": [
+        {
+          "start": 0,
+          "end": 0.05,
+          "relation": "MI"
+        },
+        {
+          "start": 0,
+          "end": 0.5,
+          "relation": "D"
+        }
       ]
     }
   ]

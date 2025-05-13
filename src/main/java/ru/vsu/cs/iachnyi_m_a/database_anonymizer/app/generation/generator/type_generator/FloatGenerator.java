@@ -3,7 +3,6 @@ package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator.type_
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.continuous.ContinuousDistribution;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class FloatGenerator extends ColumnGenerator {

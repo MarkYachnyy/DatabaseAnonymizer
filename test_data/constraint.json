@@ -88,7 +88,7 @@
         3,
         6
       ],
-      "sourceZeroChance": 0.1,
+      "sourceZeroChance": 0.02,
       "targetZeroChance": 0
     }
   ],

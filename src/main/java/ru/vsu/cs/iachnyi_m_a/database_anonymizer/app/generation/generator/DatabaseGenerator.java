@@ -56,7 +56,7 @@ public class DatabaseGenerator {
             tableGenerators.add(new TableGenerator(table.getName()));
         }
 
-        for(Unique unique: constraintSet.getUniques()){
+        for (Unique unique : constraintSet.getUniques()) {
             executor.executeQuery(createUniqueConstraintQuery(unique.getTableName(), unique.getColumnName()));
         }
 
@@ -84,12 +84,15 @@ public class DatabaseGenerator {
         if (ruleSet.getFloatRules() != null) allRules.addAll(ruleSet.getFloatRules());
         if (ruleSet.getStringRules() != null) allRules.addAll(ruleSet.getStringRules());
         if (ruleSet.getDateRules() != null) allRules.addAll(ruleSet.getDateRules());
+        if (ruleSet.getDateIntervalRules() != null) allRules.addAll(ruleSet.getDateIntervalRules());
+        if (ruleSet.getFloatIntervalRules() != null) allRules.addAll(ruleSet.getFloatIntervalRules());
+
         for (Rule rule : allRules) {
             ColumnGenerator generator = rule.toGenerator(constraintSet.getUniques().stream().anyMatch(u -> u.getColumnName().equals(rule.getColumnName()) && u.getTableName().equals(rule.getTableName())));
             TableGenerator tableGenerator = tableGenerators.stream().filter(table1 -> table1.getTableName().equals(rule.getTableName())).findFirst().get();
             tableGenerator.getColumnGenerators().add(generator);
-            if(generator.getNullChance() == 0f){
-                for(String columnName: generator.getColumnNames()){
+            if (generator.getNullChance() == 0f) {
+                for (String columnName : generator.getColumnNames()) {
                     executor.executeQuery(createNotNullConstraintQuery(tableGenerator.getTableName(), columnName));
                 }
             }
@@ -279,9 +282,10 @@ public class DatabaseGenerator {
                 values.addAll(Arrays.stream(columnGenerator.getNextValues()).toList());
             }
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
-            for (int j = updatedRows; j < keysMap.get(i); j++) {
+            for (int j = updatedRows; j < updatedRows + keysMap.get(i); j++) {
                 queryExecutor.executeQuery(createUpdateQuery(parentTableName, parentPrimaryKeyName, parentPrimaryKeyValues.get(j), parentForeignKeyName, generatedNonNullKeys.get(i)));
             }
+            updatedRows += keysMap.get(i);
         }
 
         for (String nullKey : generatedNullKeys) {
@@ -297,17 +301,16 @@ public class DatabaseGenerator {
         }
 
 
-
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-        queryExecutor.executeQuery(
-                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+//        queryExecutor.executeQuery(
+//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
-        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-                parentTableName,
-                parentForeignKeyName,
-                tableGenerator.getTableName(),
-                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+//                parentTableName,
+//                parentForeignKeyName,
+//                tableGenerator.getTableName(),
+//                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
@@ -417,14 +420,14 @@ public class DatabaseGenerator {
         }
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-        queryExecutor.executeQuery(
-                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
-        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-                tableGenerator.getTableName(),
-                parentForeignKeyName,
-                childTableName,
-                childPrimaryKeyName));
+//        queryExecutor.executeQuery(
+//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+//                tableGenerator.getTableName(),
+//                parentForeignKeyName,
+//                childTableName,
+//                childPrimaryKeyName));
 
         for (RelationMapElement element : graphNode.getChildren()) {
             TableRelationGraphNode node = element.getNode();
@@ -470,8 +473,8 @@ public class DatabaseGenerator {
             query.append(column.getName());
             query.append(' ');
             query.append("VARCHAR");
-        } else if (column.getType() == ValueType.INT_INTERVAL) {
-            query.append(getIntervalCreationQuery(column.getName(), ValueType.INTEGER));
+        } else if (column.getType() == ValueType.FLOAT_INTERVAL) {
+            query.append(getIntervalCreationQuery(column.getName(), ValueType.FLOAT));
         } else if (column.getType() == ValueType.DATE_INTERVAL) {
             query.append(getIntervalCreationQuery(column.getName(), ValueType.DATE));
         } else {
@@ -484,11 +487,11 @@ public class DatabaseGenerator {
 
     private String getIntervalCreationQuery(String columnName, ValueType type) {
         return columnName +
-                "Start " +
+                "_start " +
                 type +
                 ", " +
                 columnName +
-                "End " +
+                "_end " +
                 type;
     }
 
@@ -533,10 +536,10 @@ public class DatabaseGenerator {
     }
 
     private String createUniqueConstraintQuery(String tableName, String columnName) {
-        return String.format("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s);", tableName, "unique"+new Random().nextInt(1000000), columnName);
+        return String.format("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s);", tableName, "unique" + new Random().nextInt(1000000), columnName);
     }
 
-    private String createNotNullConstraintQuery(String tableName, String columnName){
+    private String createNotNullConstraintQuery(String tableName, String columnName) {
         return String.format("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", tableName, columnName);
     }
 

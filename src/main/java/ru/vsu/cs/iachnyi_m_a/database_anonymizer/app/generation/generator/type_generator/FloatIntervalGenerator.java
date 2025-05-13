@@ -1,6 +1,7 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator.type_generator;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 public class FloatIntervalGenerator extends ColumnGenerator {
@@ -12,6 +13,7 @@ public class FloatIntervalGenerator extends ColumnGenerator {
     private float endMin;
     private float endMax;
     private boolean unique;
+    private Random random;
 
     private Set<Integer> alreadyGeneratedValues;
 
@@ -23,7 +25,8 @@ public class FloatIntervalGenerator extends ColumnGenerator {
         this.endMin = endMin;
         this.endMax = endMax;
         this.unique = unique;
-        this.alreadyGeneratedValues = new HashSet<Integer>();
+        this.alreadyGeneratedValues = new HashSet<>();
+        random = new Random();
     }
 
     @Override
@@ -38,12 +41,14 @@ public class FloatIntervalGenerator extends ColumnGenerator {
 
     @Override
     protected String[] generateValues() {
-        return new String[0];
+        float min = startMin == startMax ? startMin : random.nextFloat(startMin, startMax);
+        float max = endMin == endMax ? endMin : random.nextFloat(endMin, endMax);
+        return min < max ? new String[]{String.valueOf(min), String.valueOf(max)} : new String[]{String.valueOf(max), String.valueOf(min)};
     }
 
     @Override
     public boolean isUnique() {
-        return false;
+        return unique;
     }
 
     @Override

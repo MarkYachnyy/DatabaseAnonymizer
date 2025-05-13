@@ -10,6 +10,6 @@ public enum ValueType {
     FLOAT,
     BOOLEAN,
     DATE,
-    INT_INTERVAL,
+    FLOAT_INTERVAL,
     DATE_INTERVAL
 }
