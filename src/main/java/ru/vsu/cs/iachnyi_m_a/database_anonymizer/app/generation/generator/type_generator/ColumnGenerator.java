@@ -13,9 +13,8 @@ public abstract class ColumnGenerator {
         if(!isUnique()){
             return generateValues();
         } else {
-            boolean uniques = true;
+            boolean uniques;
             String[] res;
-
             do {
                 res = generateValues();
                 uniques = !getAlreadyGeneratedValuesHashCodes().contains(Arrays.hashCode(res));

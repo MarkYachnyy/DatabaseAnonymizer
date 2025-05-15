@@ -17,7 +17,7 @@ public class PoissonDistribution implements DiscreteDistribution {
         int n = 0;
         double p = 1;
         while (p > Math.exp(-mean)) {
-            double u = rand.nextDouble();
+            double u = Math.random();
             n++;
             p *= u;
         }

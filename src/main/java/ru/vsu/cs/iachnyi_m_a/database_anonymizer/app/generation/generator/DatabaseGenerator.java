@@ -302,15 +302,15 @@ public class DatabaseGenerator {
 
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-//        queryExecutor.executeQuery(
-//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+        queryExecutor.executeQuery(
+                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
-//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-//                parentTableName,
-//                parentForeignKeyName,
-//                tableGenerator.getTableName(),
-//                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+                parentTableName,
+                parentForeignKeyName,
+                tableGenerator.getTableName(),
+                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
@@ -346,11 +346,11 @@ public class DatabaseGenerator {
                                  List<String> childPrimaryKeyValues,
                                  String parentForeignKeyName,
                                  DiscreteDistribution distribution,
-                                 float sourceZeroChance) throws SQLException {
+                                 float targetZeroChance) throws SQLException {
         List<String> generatedNonNullKeys = new ArrayList<>();
         List<String> generatedNullKeys = new ArrayList<>();
         List<Integer> keysMap = new ArrayList<>();
-        float sourceZeroRatio = sourceZeroChance / (1 - sourceZeroChance);
+        float ratio = targetZeroChance / (1 - targetZeroChance);
         for (int j = 0; j < childPrimaryKeyValues.size(); j++) {
             int count = distribution.next();
             for (int i = 0; i < count; i++) {
@@ -358,7 +358,7 @@ public class DatabaseGenerator {
             }
             keysMap.add(count);
         }
-        for (int i = 0; i < (int) (generatedNonNullKeys.size() * sourceZeroRatio); i++) {
+        for (int i = 0; i < (int) (generatedNonNullKeys.size() * ratio); i++) {
             generatedNullKeys.add(tableGenerator.getPrimaryKeyGenerator().nextValue());
         }
         List<String> allGeneratedKeys = new ArrayList<>(generatedNonNullKeys);
@@ -420,14 +420,14 @@ public class DatabaseGenerator {
         }
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-//        queryExecutor.executeQuery(
-//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
-//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-//                tableGenerator.getTableName(),
-//                parentForeignKeyName,
-//                childTableName,
-//                childPrimaryKeyName));
+        queryExecutor.executeQuery(
+                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+                tableGenerator.getTableName(),
+                parentForeignKeyName,
+                childTableName,
+                childPrimaryKeyName));
 
         for (RelationMapElement element : graphNode.getChildren()) {
             TableRelationGraphNode node = element.getNode();
