@@ -5,15 +5,29 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class QueryExecutor {
-    private Connection conn;
 
-    public QueryExecutor(Connection conn) {
+    private Connection conn;
+    Statement statement;
+
+    public QueryExecutor(Connection conn)
+    {
         this.conn = conn;
+        try {
+            statement = conn.createStatement();
+        } catch (SQLException e) {
+
+        }
     }
 
     public void executeQuery(String query) throws SQLException {
-        //System.out.println(query);
-        Statement statement = conn.createStatement();
         statement.execute(query);
+    }
+
+    public void commit() {
+        try {
+            conn.close();
+        } catch (SQLException e) {
+
+        }
     }
 }

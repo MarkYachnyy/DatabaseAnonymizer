@@ -1,6 +1,7 @@
 package ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.generator;
 
 import org.postgresql.util.PSQLException;
+import ru.vsu.cs.iachnyi_m_a.database_anonymizer.GlobalTimeMeasurer;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.discrete.DiscreteDistribution;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.generation.distribution.discrete.DiscreteDistributionFactory;
 import ru.vsu.cs.iachnyi_m_a.database_anonymizer.app.initial_data.constraint.Unique;
@@ -41,6 +42,21 @@ public class DatabaseGenerator {
 
     public void fillDatabase(DatabaseSchema schema, ConstraintSet constraintSet, RuleSet ruleSet, String firstTableName, int firstTableCount) throws SQLException {
 
+        GlobalTimeMeasurer.setOnFinishedLambda(() -> {
+            try {
+                QueryExecutor executor = queryTool.getQueryExecutor();
+                for(PrimaryKey key: constraintSet.getPrimaryKeys()) {
+                    executor.executeQuery(createPrimaryKeyConstraintQuery(key.getTableName(), key.getColumnName()));
+                }
+                for (ForeignKey key: constraintSet.getForeignKeys()) {
+                    executor.executeQuery(createForeignKeyConstraintQuery(key.getSourceTableName(), key.getSourceColumnName(), key.getTargetTableName(), key.getTargetColumnName()));
+                }
+                executor.commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        });
         //СОЗДАНИЕ ТАБЛИЦ
 
         List<Table> tables = schema.getTables();
@@ -98,15 +114,24 @@ public class DatabaseGenerator {
             }
         }
 
+        executor.commit();
+
         //ЗАПУСК ЗАПОЛНЕНИЯ ТАБЛИЦ
 
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(schema.getTables().size(), schema.getTables().size(), 2, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1, 2, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
         threadPoolExecutor.allowCoreThreadTimeOut(true);
-        fillFirstTable(tableRelationGraph.findNodeByTableName(firstTableName),
-                threadPoolExecutor,
-                queryTool,
-                tableGenerators.stream().filter(tg -> tg.getTableName().equals(firstTableName)).findFirst().get(),
-                firstTableCount);
+        threadPoolExecutor.execute(()  -> {
+            try {
+                fillFirstTable(tableRelationGraph.findNodeByTableName(firstTableName),
+                        threadPoolExecutor,
+                        queryTool,
+                        tableGenerators.stream().filter(tg -> tg.getTableName().equals(firstTableName)).findFirst().get(),
+                        firstTableCount);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
     }
 
     private TableRelationGraph getTableRelationGraph(List<String> allTables, List<ForeignKey> foreignKeys) {
@@ -170,6 +195,9 @@ public class DatabaseGenerator {
 
         System.out.println("FILLING TABLE " + tableGenerator.getTableName());
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+//        queryExecutor.executeQuery(
+//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
         for (int i = 0; i < count; i++) {
             List<String> columnNames = new ArrayList<>();
             List<String> values = new ArrayList<>();
@@ -181,10 +209,9 @@ public class DatabaseGenerator {
             }
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
+        queryExecutor.commit();
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + generatedKeys.size() + " ROWS");
-        queryExecutor.executeQuery(
-                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
@@ -208,6 +235,8 @@ public class DatabaseGenerator {
             });
 
         }
+
+        GlobalTimeMeasurer.tick();
     }
 
     private void fillChildTable(TableRelationGraphNode graphNode,
@@ -270,8 +299,19 @@ public class DatabaseGenerator {
         //ЗАПОЛНЕНИЕ СЕБЯ + ОБНОВЛЕНИЕ РОДИТЕЛЬСКОЙ ТАБЛИЦЫ
 
         System.out.println("FILLING TABLE " + tableGenerator.getTableName());
-        int updatedRows = 0;
+
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+//        queryExecutor.executeQuery(
+//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+//
+//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+//                parentTableName,
+//                parentForeignKeyName,
+//                tableGenerator.getTableName(),
+//                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+
+        int updatedRows = 0;
         for (int i = 0; i < keysMap.size(); i++) {
             List<String> columnNames = new ArrayList<>();
             List<String> values = new ArrayList<>();
@@ -300,17 +340,11 @@ public class DatabaseGenerator {
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
 
+        queryExecutor.commit();
+
 
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-        queryExecutor.executeQuery(
-                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
-        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-                parentTableName,
-                parentForeignKeyName,
-                tableGenerator.getTableName(),
-                tableGenerator.getPrimaryKeyGenerator().getColumnName()));
 
         //ЗАПУСК ЗАПОЛНЕНИЯ ДОЧЕРНИХ ТАБЛИЦ
 
@@ -335,6 +369,9 @@ public class DatabaseGenerator {
             });
 
         }
+
+        GlobalTimeMeasurer.tick();
+
     }
 
     private void fillParentTable(TableRelationGraphNode graphNode,
@@ -387,6 +424,16 @@ public class DatabaseGenerator {
         System.out.println("FILLING TABLE " + tableGenerator.getTableName());
 
         QueryExecutor queryExecutor = queryTool.getQueryExecutor();
+
+//        queryExecutor.executeQuery(
+//                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
+//                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
+//        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
+//                tableGenerator.getTableName(),
+//                parentForeignKeyName,
+//                childTableName,
+//                childPrimaryKeyName));
+
         int sum = 0;
         for (int countNumber = 0; countNumber < keysMap.size(); countNumber++) {
             int count = keysMap.get(countNumber);
@@ -419,15 +466,9 @@ public class DatabaseGenerator {
             queryExecutor.executeQuery(createInsertQuery(tableGenerator.getTableName(), columnNames, values));
         }
 
+        queryExecutor.commit();
         System.out.println("FILLED TABLE " + tableGenerator.getTableName() + " WITH " + allGeneratedKeys.size() + " ROWS");
-        queryExecutor.executeQuery(
-                createPrimaryKeyConstraintQuery(tableGenerator.getTableName(),
-                        tableGenerator.getPrimaryKeyGenerator().getColumnName()));
-        queryExecutor.executeQuery(createForeignKeyConstraintQuery(
-                tableGenerator.getTableName(),
-                parentForeignKeyName,
-                childTableName,
-                childPrimaryKeyName));
+
 
         for (RelationMapElement element : graphNode.getChildren()) {
             TableRelationGraphNode node = element.getNode();
@@ -451,6 +492,8 @@ public class DatabaseGenerator {
             });
 
         }
+
+        GlobalTimeMeasurer.tick();
     }
 
     private String getTableCreationQuery(Table table) {
